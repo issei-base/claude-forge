@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# Wire ~/.claude/{commands,skills,agents,hooks} → this repo's directories.
+# Wire ~/.claude/{skills,agents,hooks} → this repo's directories.
 # Idempotent: existing real directories are backed up to *.bak-<timestamp>,
 # existing symlinks pointing here are left alone, anything else aborts.
+#
+# Note: ~/.claude/commands は **意図的に管理外**。すべて Skills に統合する方針
+# (Anthropic の最近のガイドライン)。slash command が欲しい場合は対応する skill を
+# `/skill-name` で明示呼びすればよい。古い ~/.claude/commands のシンボリックリンクは
+# `rm ~/.claude/commands` で手動削除してください (broken link を放置すると無害だが
+# 混乱の元)。
 
 set -euo pipefail
 
@@ -48,9 +54,18 @@ link_dir() {
 }
 
 echo "Linking Claude Code customization directories..."
-for d in commands skills agents hooks; do
+for d in skills agents hooks; do
   link_dir "$d"
 done
+
+# 旧版で ~/.claude/commands を symlink していた場合、broken link を掃除
+if [[ -L "$CLAUDE_DIR/commands" ]]; then
+  current="$(readlink "$CLAUDE_DIR/commands")"
+  if [[ "$current" == "$REPO_DIR/commands" ]]; then
+    echo "  [cleanup] $CLAUDE_DIR/commands は broken symlink (本 repo の commands/ は削除済)。rm します"
+    rm "$CLAUDE_DIR/commands"
+  fi
+fi
 
 echo
 echo "Done. ~/.claude is wired to:"
