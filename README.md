@@ -1,65 +1,98 @@
 # claude-forge
 
-Personal Claude Code customization assets, managed in git.
+個人用 Claude Code カスタマイズ資産を git で管理するリポジトリ。
 
 ```
 claude-forge/
-├── commands/   # slash commands → ~/.claude/commands/
-├── skills/     # custom skills  → ~/.claude/skills/
-├── agents/     # custom agents  → ~/.claude/agents/
-├── hooks/      # hook scripts   → ~/.claude/hooks/
+├── commands/   # スラッシュコマンド → ~/.claude/commands/
+├── skills/     # カスタム skill  → ~/.claude/skills/
+├── agents/     # カスタム agent  → ~/.claude/agents/
+├── hooks/      # hook スクリプト → ~/.claude/hooks/
 ├── settings/
-│   └── settings.example.json  # template for ~/.claude/settings.json (hand-merged)
-└── install.sh  # idempotent symlink installer
+│   └── settings.example.json  # ~/.claude/settings.json 用のテンプレ (手動マージ)
+├── .github/workflows/         # PR 自動レビュー / セキュリティチェック (claude-forge 自身用)
+└── install.sh                 # 冪等な symlink インストーラ
 ```
 
-## Setup on a new machine
+## 新しいマシンでのセットアップ
 
 ```sh
-git clone <this-repo-url> ~/projects/claude-forge
+git clone git@github.com:issei-base/claude-forge.git ~/projects/claude-forge
 cd ~/projects/claude-forge
 ./install.sh
 ```
 
-`install.sh` symlinks the four directories above into `~/.claude/`. Existing real directories there are backed up to `*.bak-<timestamp>` first, and their contents are merged forward into this repo.
+`install.sh` は上記 4 ディレクトリを `~/.claude/` 配下にシンボリックリンクする。既に実体ディレクトリがある場合は `*.bak-<timestamp>` にバックアップしてから、その中身を本 repo にマージする。
 
-`settings.json` is **not** symlinked because Claude Code rewrites it at runtime (UI preferences, oauth state, etc.). Hand-merge from `settings/settings.example.json` instead, or use the `/permissions` UI.
+`settings.json` は **シンボリックリンクしない** (Claude Code がランタイムで rewrites するため)。代わりに `settings/settings.example.json` から手動マージする、もしくは `/permissions` UI を使う。
 
-## What goes here
+## ここに置くもの
 
-| Directory | What |
+| ディレクトリ | 用途 |
 |---|---|
-| `commands/` | Markdown files invoked as `/<filename>` slash commands |
-| `skills/` | `<skill-name>/SKILL.md` directories that Claude can invoke |
-| `agents/` | `<agent-name>.md` custom subagents |
-| `hooks/` | Shell scripts referenced from `settings.json` `hooks` blocks |
+| `commands/` | `/<filename>` で呼べるスラッシュコマンドの markdown |
+| `skills/` | `<skill-name>/SKILL.md` 形式の model-invoked skill |
+| `agents/` | `<agent-name>.md` のカスタム subagent |
+| `hooks/` | `settings.json` の `hooks` ブロックから参照される shell script |
+| `.github/workflows/` | claude-forge 自身の PR レビュー / セキュリティチェック |
 
-## What does NOT go here
+## ここに置かないもの
 
-- `~/.claude/settings.json` / `settings.local.json` — runtime-mutable, machine-specific
-- `~/.claude/projects/` — per-project memory and session state
-- `~/.claude/plugins/` — installed via plugin marketplace, not source-controlled
-- Anything containing secrets (API keys, tokens)
+- `~/.claude/settings.json` / `settings.local.json` — ランタイムで書き換わる、マシン固有
+- `~/.claude/projects/` — プロジェクトごとの memory / session state
+- `~/.claude/plugins/` — plugin marketplace 経由でインストールされる
+- secrets を含むもの全て (API key、token など)
 
-## Current commands
+## 現在のスラッシュコマンド
 
-- `commands/codex-review.md` — `/codex-review` runs OpenAI Codex against the current git diff for a second-opinion review
+| コマンド | やること |
+|---|---|
+| `/codex-review` | 現在の git 差分を OpenAI Codex CLI に渡してセカンドオピニオンレビュー |
+| `/install-pr-reviews` | 現在の git repo の `.github/workflows/` にこの repo の PR 自動レビュー workflow をコピー |
 
-## Current skills
+## 現在の skill (model-invoked)
 
-| Skill | Triggers on | What it does |
+| Skill | 発動するフレーズ | 中身 |
 |---|---|---|
-| `ship` | "ship it", "PR出して", "PR作って" | Branch → commit → push → `gh pr create`. End-to-end PR workflow. |
-| `codex-review` | "codex にレビューして", "セカンドオピニオン", "他のモデルにも見せて" | Hands current diff to OpenAI Codex CLI for an independent review; shows output verbatim. |
-| `aws-docs` | "AWS の docs", "公式ドキュメントだと", "Lambda の上限って" | Looks up the official AWS docs via the `aws` MCP server and answers from primary sources. |
-| `aws-advisor` | "AWS で X したい", "best practice for <AWS service>", "Well-Architected 的に" | Architecture/config advice grounded in AWS best-practices docs (not memory). |
+| `ship` | 「ship して」「PR出して」「PR作って」 | branch → commit → push → `gh pr create`。**main / default branch への直接 push は絶対禁止** の hard guard 付き |
+| `codex-review` | 「codex にレビュー」「セカンドオピニオン」「他のモデルにも見せて」 | 現在の差分を Codex CLI に渡し、出力を逐語的にユーザーに見せる |
+| `aws-docs` | 「AWS の docs」「公式ドキュメントだと」「Lambda の上限って」 | `aws` MCP server で公式 docs を引いて一次ソースから回答 |
+| `aws-advisor` | 「AWS で X したい」「best practice for <service>」「Well-Architected 的に」 | Well-Architected docs に基づくアーキテクチャ助言 (推奨 + tradeoffs) |
 
-## MCP servers (in `settings/settings.example.json`)
+## MCP servers (`settings/settings.example.json`)
 
-- **`obsidian`** — Obsidian vault at `/Users/issei/obsidian/issei`
-- **`aws`** — official AWS managed MCP (`mcp-proxy-for-aws`). Requires `uv` (Homebrew: `brew install uv`) and local AWS credentials (`aws configure` or SSO). Region default is `ap-northeast-1` in the template — edit to taste. Auth uses IAM SigV4 against your local credentials, so what the MCP can do is bounded by your IAM policy.
+| サーバー | 用途 / 前提 |
+|---|---|
+| `obsidian` | `/Users/issei/obsidian/issei` の vault |
+| `aws` | AWS 公式マネージド MCP (`mcp-proxy-for-aws`)。前提: `uv` (`brew install uv`) と AWS credentials (`aws configure` か SSO)。リージョン default は `ap-northeast-1` (テンプレ内、適宜編集)。IAM SigV4 でローカル credentials を使うので、MCP の実行可能範囲は IAM ポリシーに従う |
 
-To activate after `install.sh`:
-1. Hand-merge the `mcpServers` block from `settings/settings.example.json` into `~/.claude/settings.json`
-2. Restart Claude Code so it picks up the new servers
-3. (AWS only) Make sure `aws sts get-caller-identity` returns successfully first
+`install.sh` 実行後の有効化:
+1. `settings/settings.example.json` の `mcpServers` ブロックを `~/.claude/settings.json` に手動マージ
+2. Claude Code を再起動して新サーバーを認識
+3. (AWS のみ) `aws sts get-caller-identity` が成功することを先に確認
+
+## PR 自動レビュー workflow
+
+`.github/workflows/` に 2 つの workflow を置いている:
+
+| Workflow | 役割 |
+|---|---|
+| `claude-review.yml` | PR opened/synchronize で Claude が一般レビュー (正しさ / 可読性 / テスト / パフォーマンス) を inline コメント |
+| `claude-security-review.yml` | 同 trigger で Claude がセキュリティ専用レビュー (OWASP / secret / 認可 / 暗号誤用 / 依存脆弱性) を inline コメント |
+
+### 自分の repo (claude-forge) で動かすには
+
+GitHub repo の Secrets に `CLAUDE_CODE_OAUTH_TOKEN` を登録する:
+```sh
+claude setup-token        # OAuth token を発行
+gh secret set CLAUDE_CODE_OAUTH_TOKEN -R issei-base/claude-forge   # 貼り付け
+```
+これで次の PR から自動でレビューが走る。
+
+### 他の repo にも入れるには
+
+別の repo の中で:
+```
+/install-pr-reviews
+```
+を実行すると `.github/workflows/` に 2 つの yml がコピーされる。その後同様に `gh secret set CLAUDE_CODE_OAUTH_TOKEN` を実行。

@@ -1,0 +1,46 @@
+name: Claude Security Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude security review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            このプルリクエストのセキュリティレビューを実施してください。日本語でコメントしてください。
+
+            重点観点:
+            - **OWASP Top 10**: injection (SQL/コマンド/template), XSS, SSRF, IDOR, 認可 bypass, 不安全な deserialization
+            - **シークレット混入**: ハードコードされた API key / token / password / 秘密鍵 (.env, config 含む)
+            - **認証・認可の漏れ**: エンドポイント保護不足、権限チェック忘れ、JWT 検証不備
+            - **入力バリデーション**: 信頼境界での未検証入力、サイズ上限欠如、型強制ミス
+            - **依存関係**: 新規追加 package に既知 CVE が無いか
+            - **ログ漏洩**: トークン・PII・パスワードがログに出る可能性
+            - **暗号処理の誤用**: 弱い algorithm、固定 IV/salt、独自実装、TLS 検証 disable
+            - **インフラ系**: IAM 過剰権限、public S3、SG の 0.0.0.0/0、暗号化未設定
+            - **prompt injection** (AI 関連 PR の場合): 信頼できない入力が system prompt に届く経路
+
+            指摘の出し方:
+            - inline PR コメント (該当行) で残してください
+            - 各指摘の冒頭に severity tag を付けてください: `[critical]` `[high]` `[medium]` `[low]`
+            - `critical` / `high` はマージブロッカーとして扱う想定で書いてください
+            - 推測ベース・FUD は避ける。根拠 (攻撃シナリオ) を 1 文で添える
+            - 問題が無ければ PR 本体に「セキュリティレビュー完了: 懸念は見つかりませんでした」と 1 行

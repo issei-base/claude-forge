@@ -1,35 +1,35 @@
 ---
 name: aws-docs
-description: Look up the official AWS documentation for a specific service, API, parameter, limit, or behavior — and answer from primary sources rather than training-time memory. Trigger when the user asks how an AWS service works, what a parameter means, what the limits/quotas are, the exact syntax for a config, or asks to verify a claim about AWS. Phrases like "S3 の lifecycle rule の書き方", "Lambda の同時実行数上限って", "公式ドキュメントだと", "AWS の docs 見て", "is this still true about <AWS service>". Use INSTEAD of answering from memory when the question is about specific API shape, current limits, or service behavior that may have changed.
+description: 特定の AWS サービス / API / パラメータ / 上限 / 動作について、公式ドキュメントを引いて一次ソースから回答する。学習データの記憶ではなく primary source から答える。ユーザーが AWS サービスの動作・パラメータの意味・上限/クォータ・設定の正確な syntax を聞いてきたとき、または AWS に関する主張の真偽を確認したいときに発動する。「S3 の lifecycle rule の書き方」「Lambda の同時実行数上限って」「公式ドキュメントだと」「AWS の docs 見て」「is this still true about <AWS service>」などのフレーズ。具体的な API shape / 現行 limit / サービス挙動など、時間とともに変わりうる内容では記憶から答えずこの skill を使う。
 ---
 
 # aws-docs
 
-Answer AWS questions from primary documentation, not from training data. The AWS MCP server (`aws` in mcpServers) provides `search_documentation` and `read_documentation` — use them.
+AWS の質問に学習データではなく一次ドキュメントから答える。`aws` MCP server が `search_documentation` と `read_documentation` を提供しているので、それを使う。
 
 ## Preflight
 
-- The `aws` MCP server must be connected. Check by listing available `mcp__aws__*` tools. If `search_documentation` and `read_documentation` are not visible, tell the user the MCP server is not active (see claude-forge README for setup) and STOP.
+- `aws` MCP server が接続されている必要あり。利用可能な `mcp__aws__*` tool を確認。`search_documentation` と `read_documentation` が見えなければ「MCP server が有効化されていない (claude-forge README 参照)」と伝えて STOP。
 
-## Workflow
+## ワークフロー
 
-1. **Search** with `mcp__aws__search_documentation`
-   - Use the user's exact terms first. AWS docs are keyword-sensitive.
-   - If 0 results, try synonyms (e.g. "concurrent executions" ↔ "concurrency limit") — at most 3 query attempts.
+1. **検索** — `mcp__aws__search_documentation`
+   - まずユーザーの語をそのまま使う。AWS docs はキーワード sensitive。
+   - 0 件なら同義語を試す (例: "concurrent executions" ↔ "concurrency limit")。クエリは最大 3 回まで。
 
-2. **Read** the most relevant 1-3 results with `mcp__aws__read_documentation`
-   - Prefer the official service docs page over blog posts or whitepapers
-   - For limits/quotas, prefer the Service Quotas page
-   - For API shape, prefer the API Reference
+2. **読む** — 関連性の高い 1〜3 件を `mcp__aws__read_documentation` で読む
+   - blog や whitepaper より公式サービス doc ページを優先
+   - 上限 / クォータなら Service Quotas ページを優先
+   - API shape なら API Reference を優先
 
-3. **Answer** the user with:
-   - The specific fact they asked for, **quoted verbatim** if it's a limit, parameter name, or syntax
-   - A markdown link to the source doc (always — never an unsourced AWS claim)
-   - If the docs contradict your prior knowledge, say so explicitly ("My earlier statement was wrong — the docs say X")
+3. **回答**:
+   - 聞かれた具体的事実を答える。上限・パラメータ名・syntax は **verbatim で引用**
+   - 出典 doc への markdown link を **必ず** 付ける (出典なしの AWS 主張は絶対 NG)
+   - 自分の事前知識と docs が矛盾していたら明示する (「先ほどの説明は誤りでした — docs では X」)
 
-## Do NOT
+## してはいけないこと
 
-- Don't paraphrase a number/limit/quota — quote it. AWS changes these.
-- Don't answer if the docs were inconclusive. Say "I couldn't find this in the docs — here's the closest page" and link.
-- Don't use `call_aws` here. This skill is read-only docs lookup, not live API queries.
-- Don't combine with [[aws-advisor]] automatically. If the user wants design advice, that skill triggers separately.
+- 数字 / 上限 / クォータを paraphrase しない。AWS はこれらを変更する。verbatim 引用。
+- docs で結論が出なかったら答えを作らない。「docs では確認できませんでした。最も近いページはこれ」と link で示す。
+- ここで `call_aws` は使わない。この skill は読み取り専用 docs lookup であって、ライブ API 呼び出しではない。
+- [[aws-advisor]] と自動連結しない。設計助言が必要ならそちらの skill が別途発動する。

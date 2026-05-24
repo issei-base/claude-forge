@@ -1,0 +1,47 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude code review
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Pro/Max サブスクリプションを使う場合: `claude setup-token` で生成した
+          # OAuth token を repo secrets に CLAUDE_CODE_OAUTH_TOKEN として登録。
+          # 代わりに API key を使うなら下の anthropic_api_key を有効化。
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            このプルリクエストをレビューしてください。日本語でコメントしてください。
+
+            重点的に見る観点:
+            - **正しさのバグ**: ロジック誤り、off-by-one、null 参照、レースコンディション
+            - **既存コードとの整合性**: 命名規約、設計パターン、エラーハンドリング方針
+            - **テスト**: カバレッジの妥当性、edge case の見落とし、テスト自体の品質
+            - **可読性**: 命名、関数分割、コメントの妥当性
+            - **パフォーマンス**: N+1、不必要なループ、メモリリーク懸念
+
+            指摘の出し方:
+            - inline PR コメント (該当行に直接) で残してください
+            - 各指摘の冒頭に severity tag を付けてください: `[critical]` `[high]` `[medium]` `[low]` `[nit]`
+            - `critical` / `high` はマージ前修正が望ましい、`medium` 以下は判断次第
+            - 推測ベースの「念のため」指摘は避け、根拠ある指摘のみ
+            - 問題が無い場合は PR 本体に「レビュー完了: 問題は見つかりませんでした」と 1 行コメント
+
+            セキュリティ観点は別 workflow (Claude Security Review) が担当するため、ここでは深追いしないでください。
