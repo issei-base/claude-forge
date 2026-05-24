@@ -4,7 +4,6 @@
 
 ```
 claude-forge/
-├── commands/   # スラッシュコマンド → ~/.claude/commands/
 ├── skills/     # カスタム skill  → ~/.claude/skills/
 ├── agents/     # カスタム agent  → ~/.claude/agents/
 ├── hooks/      # hook スクリプト → ~/.claude/hooks/
@@ -14,6 +13,8 @@ claude-forge/
 └── install.sh                 # 冪等な symlink インストーラ
 ```
 
+> **方針: スラッシュコマンドは使わず、すべて Skills に統合** (Anthropic の最近のガイドラインに沿う)。Skill は description で自動発火するが、明示呼びしたい時は `/skill-name` でも呼べる。`commands/` ディレクトリは置かない。
+
 ## 新しいマシンでのセットアップ
 
 ```sh
@@ -22,7 +23,7 @@ cd ~/projects/claude-forge
 ./install.sh
 ```
 
-`install.sh` は上記 4 ディレクトリを `~/.claude/` 配下にシンボリックリンクする。既に実体ディレクトリがある場合は `*.bak-<timestamp>` にバックアップしてから、その中身を本 repo にマージする。
+`install.sh` は上記 3 ディレクトリ (`skills` / `agents` / `hooks`) を `~/.claude/` 配下にシンボリックリンクする。既に実体ディレクトリがある場合は `*.bak-<timestamp>` にバックアップしてから、その中身を本 repo にマージする。旧バージョンで `~/.claude/commands` を symlink していた場合は、`install.sh` が broken link を自動で掃除する。
 
 `settings.json` は **シンボリックリンクしない** (Claude Code がランタイムで rewrites するため)。代わりに `settings/settings.example.json` から手動マージする、もしくは `/permissions` UI を使う。
 
@@ -30,8 +31,7 @@ cd ~/projects/claude-forge
 
 | ディレクトリ | 用途 |
 |---|---|
-| `commands/` | `/<filename>` で呼べるスラッシュコマンドの markdown |
-| `skills/` | `<skill-name>/SKILL.md` 形式の model-invoked skill |
+| `skills/` | `<skill-name>/SKILL.md` 形式の skill。description で自動発火 or `/skill-name` で明示呼び |
 | `agents/` | `<agent-name>.md` のカスタム subagent |
 | `hooks/` | `settings.json` の `hooks` ブロックから参照される shell script |
 | `.github/workflows/` | claude-forge 自身の PR レビュー / セキュリティチェック |
@@ -43,19 +43,15 @@ cd ~/projects/claude-forge
 - `~/.claude/plugins/` — plugin marketplace 経由でインストールされる
 - secrets を含むもの全て (API key、token など)
 
-## 現在のスラッシュコマンド
+## 現在の skill
 
-| コマンド | やること |
-|---|---|
-| `/codex-review` | 現在の git 差分を OpenAI Codex CLI に渡してセカンドオピニオンレビュー |
-| `/install-pr-reviews` | 現在の git repo の `.github/workflows/` にこの repo の PR 自動レビュー workflow をコピー |
-
-## 現在の skill (model-invoked)
+description で自動発火 (model-invoked)。明示的に呼びたい時は `/skill-name` でも可。
 
 | Skill | 発動するフレーズ | 中身 |
 |---|---|---|
 | `ship` | 「ship して」「PR出して」「PR作って」 | branch → commit → push → `gh pr create`。**main / default branch への直接 push は絶対禁止** の hard guard 付き |
 | `codex-review` | 「codex にレビュー」「セカンドオピニオン」「他のモデルにも見せて」 | 現在の差分を Codex CLI に渡し、出力を逐語的にユーザーに見せる |
+| `install-pr-reviews` | 「この repo にも PR レビュー入れて」「自動レビュー workflow を install して」 | 現在 cwd の git repo の `.github/workflows/` にこの repo の PR 自動レビュー workflow をコピー、ラベル作成、GitHub App / secret 設定の案内も |
 | `aws-docs` | 「AWS の docs」「公式ドキュメントだと」「Lambda の上限って」 | `aws` MCP server で公式 docs を引いて一次ソースから回答 |
 | `aws-advisor` | 「AWS で X したい」「best practice for <service>」「Well-Architected 的に」 | Well-Architected docs に基づくアーキテクチャ助言 (推奨 + tradeoffs) |
 | `lesson-homework` | 「次回の宿題考えて」「ハンズオン課題提案して」「`<sheet URL>` の宿題」 | Google スプレッドシートのレッスン記録 (行 5) に次回ハンズオン課題を生成・書き込み。読取は CSV export で認証不要、書込は `gws` の OAuth 必須。ユーザー承認後にのみ書き込み |
@@ -132,8 +128,4 @@ EOF
 
 ### 他リポジトリに横展開する
 
-そのリポジトリの中で:
-```
-/install-pr-reviews
-```
-を実行。workflow 2 ファイルのコピー + `claude-review` ラベル作成 + GitHub App / secret 設定の案内が出る。
+そのリポジトリの cwd で Claude Code を起動して **「この repo にも PR レビュー入れて」** と言うと `install-pr-reviews` skill が発火し、workflow 2 ファイルのコピー + `claude-review` ラベル作成 + GitHub App / secret 設定の案内まで一気にやってくれる。明示的に呼びたい時は `/install-pr-reviews` でも OK。
