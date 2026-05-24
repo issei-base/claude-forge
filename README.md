@@ -58,6 +58,7 @@ cd ~/projects/claude-forge
 | `codex-review` | 「codex にレビュー」「セカンドオピニオン」「他のモデルにも見せて」 | 現在の差分を Codex CLI に渡し、出力を逐語的にユーザーに見せる |
 | `aws-docs` | 「AWS の docs」「公式ドキュメントだと」「Lambda の上限って」 | `aws` MCP server で公式 docs を引いて一次ソースから回答 |
 | `aws-advisor` | 「AWS で X したい」「best practice for <service>」「Well-Architected 的に」 | Well-Architected docs に基づくアーキテクチャ助言 (推奨 + tradeoffs) |
+| `lesson-homework` | 「次回の宿題考えて」「ハンズオン課題提案して」「`<sheet URL>` の宿題」 | Google スプレッドシートのレッスン記録 (行 5) に次回ハンズオン課題を生成・書き込み。読取は CSV export で認証不要、書込は `gws` の OAuth 必須。ユーザー承認後にのみ書き込み |
 
 ## MCP servers (`settings/settings.example.json`)
 
