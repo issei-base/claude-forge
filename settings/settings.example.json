@@ -1,0 +1,17 @@
+{
+  "_comment": "Template for ~/.claude/settings.json. Copy contents into your real settings.json by hand — install.sh does NOT touch settings.json because Claude Code rewrites it at runtime.",
+
+  "mcpServers": {
+    "obsidian": {
+      "command": "npx",
+      "args": ["-y", "mcp-obsidian", "/Users/issei/obsidian/issei"]
+    }
+  },
+
+  "permissions": {
+    "allow": [
+      "Bash(codex review:*)",
+      "Bash(codex exec:*)"
+    ]
+  }
+}
