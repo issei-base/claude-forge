@@ -24,6 +24,9 @@ jobs:
           fetch-depth: 0
 
       - name: Claude code review
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         uses: anthropics/claude-code-action@v1
         with:
           # Pro/Max サブスクリプションを使う場合: `claude setup-token` で生成した
@@ -44,8 +47,19 @@ jobs:
             指摘の出し方:
             - inline PR コメント (該当行に直接) で残してください
             - 各指摘の冒頭に severity tag を付けてください: `[critical]` `[high]` `[medium]` `[low]` `[nit]`
-            - `critical` / `high` はマージ前修正が望ましい、`medium` 以下は判断次第
             - 推測ベースの「念のため」指摘は避け、根拠ある指摘のみ
-            - 問題が無い場合は PR 本体に「レビュー完了: 問題は見つかりませんでした」と 1 行コメント
 
             セキュリティ観点は別 workflow (Claude Security Review) が担当するため、ここでは深追いしないでください。
+
+            ★ **最後に必ず PR review state を確定させてください**。Branch Protection の "Required approving review" を満たすために必須です。bash tool で以下を実行:
+
+            ```sh
+            # critical/high が無い場合
+            gh pr review "$PR_NUMBER" -R "$REPO" --approve --body "Claude PR Review: 問題は見つかりませんでした (or low/medium のみ)"
+
+            # critical または high の指摘がある場合
+            gh pr review "$PR_NUMBER" -R "$REPO" --request-changes --body "Claude PR Review: critical/high 指摘あり。inline コメントを参照して対応してください"
+            ```
+
+            - approve は楽観的にしない。critical/high が 1 件でもあれば必ず request-changes。
+            - 判断保留 (情報不足等) の場合は review state を出さず、その旨を PR コメントに 1 行残す。
