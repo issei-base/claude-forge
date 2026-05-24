@@ -34,6 +34,7 @@ jobs:
           # 代わりに API key を使うなら下の anthropic_api_key を有効化。
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          show_full_output: true  # SDK の生出力を log に出す (debug 用、不要なら削除)
           prompt: |
             このプルリクエストをレビューしてください。日本語でコメントしてください。
 
