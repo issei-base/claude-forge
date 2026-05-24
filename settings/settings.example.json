@@ -5,6 +5,15 @@
     "obsidian": {
       "command": "npx",
       "args": ["-y", "mcp-obsidian", "/Users/issei/obsidian/issei"]
+    },
+    "aws": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--metadata",
+        "AWS_REGION=ap-northeast-1"
+      ]
     }
   },
 

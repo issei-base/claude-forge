@@ -47,4 +47,19 @@ cd ~/projects/claude-forge
 
 ## Current skills
 
-- `skills/ship/` — model-invoked when you say "ship it" / "PR出して". Creates a branch if needed, generates commit + PR title/body from the diff, pushes, and opens the PR via `gh`.
+| Skill | Triggers on | What it does |
+|---|---|---|
+| `ship` | "ship it", "PR出して", "PR作って" | Branch → commit → push → `gh pr create`. End-to-end PR workflow. |
+| `codex-review` | "codex にレビューして", "セカンドオピニオン", "他のモデルにも見せて" | Hands current diff to OpenAI Codex CLI for an independent review; shows output verbatim. |
+| `aws-docs` | "AWS の docs", "公式ドキュメントだと", "Lambda の上限って" | Looks up the official AWS docs via the `aws` MCP server and answers from primary sources. |
+| `aws-advisor` | "AWS で X したい", "best practice for <AWS service>", "Well-Architected 的に" | Architecture/config advice grounded in AWS best-practices docs (not memory). |
+
+## MCP servers (in `settings/settings.example.json`)
+
+- **`obsidian`** — Obsidian vault at `/Users/issei/obsidian/issei`
+- **`aws`** — official AWS managed MCP (`mcp-proxy-for-aws`). Requires `uv` (Homebrew: `brew install uv`) and local AWS credentials (`aws configure` or SSO). Region default is `ap-northeast-1` in the template — edit to taste. Auth uses IAM SigV4 against your local credentials, so what the MCP can do is bounded by your IAM policy.
+
+To activate after `install.sh`:
+1. Hand-merge the `mcpServers` block from `settings/settings.example.json` into `~/.claude/settings.json`
+2. Restart Claude Code so it picks up the new servers
+3. (AWS only) Make sure `aws sts get-caller-identity` returns successfully first
