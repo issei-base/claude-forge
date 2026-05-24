@@ -1,42 +1,42 @@
 ---
 name: aws-advisor
-description: Give AWS architecture and configuration advice grounded in Well-Architected best practices, not memory. Trigger when the user is designing, configuring, or reviewing an AWS setup and wants guidance on the right approach — e.g. "S3 bucket の権限どう設計するのがいい", "RDS のバックアップ戦略", "VPC 構成見て", "ECS と Lambda どっち", "this Terraform module 安全？", "best practice for <AWS service>", "Well-Architected 的にどう". For pure documentation lookup (what does parameter X do, what is the limit), use [[aws-docs]] instead.
+description: AWS のアーキテクチャ・設定に関する助言を、記憶ではなく Well-Architected ベストプラクティスに基づいて行う。ユーザーが AWS 構成を設計・設定・レビューしていて適切なアプローチの助言を求めているときに発動する。「S3 bucket の権限どう設計するのがいい」「RDS のバックアップ戦略」「VPC 構成見て」「ECS と Lambda どっち」「この Terraform module 安全？」「best practice for <AWS service>」「Well-Architected 的にどう」などのフレーズ。純粋な docs 検索 (パラメータ X の意味、上限値) は [[aws-docs]] を使うこと。
 ---
 
 # aws-advisor
 
-AWS architecture/configuration advice backed by AWS's own best-practices guidance. The AWS MCP server bundles agent skills for this purpose — lean on them rather than reciting general cloud principles from memory.
+AWS のアーキテクチャ / 設定助言を、AWS 自身のベストプラクティスガイダンスに基づいて行う。`aws` MCP server がこの目的のエージェント skill を bundle しているので、それを使う。記憶からの一般論を語るのは避ける。
 
 ## Preflight
 
-- The `aws` MCP server must be connected (`mcp__aws__*` tools visible). If not, tell the user to set it up (see claude-forge README) and STOP.
-- Clarify the user's actual context **before** advising. Ask one focused question if any of these are unknown:
-  - **Workload shape**: traffic pattern, data sensitivity, team size, existing stack
-  - **Constraint**: cost ceiling, latency target, compliance requirement
-  - **Decision boundary**: are they choosing between A and B, or open to a third option
+- `aws` MCP server が接続されている (`mcp__aws__*` tool が見える) こと。無ければ「MCP server を設定してください (claude-forge README 参照)」と伝えて STOP。
+- 助言する **前に** ユーザーのコンテキストを確認する。以下のうち不明なものがあれば、1 個だけ focused な質問をする:
+  - **ワークロード形状**: トラフィックパターン、データの機密度、チーム規模、既存スタック
+  - **制約**: コスト上限、レイテンシ要件、コンプライアンス要件
+  - **意思決定の範囲**: A と B の二択か、第三の選択肢にもオープンか
 
-  Without this, advice is generic and useless. **Don't skip this step** even if it slows the response by one turn.
+  これを欠くと助言が generic で役に立たない。**1 ターン遅くなってもこのステップは飛ばさない。**
 
-## Workflow
+## ワークフロー
 
-1. **Pull best-practices guidance from the MCP**
-   - Use `mcp__aws__search_documentation` for the Well-Architected pillar(s) relevant to the question (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability)
-   - For service-specific questions, search for the service's "best practices" page (most major services have one)
-   - Read 1-3 most relevant pages
+1. **MCP からベストプラクティスを引く**
+   - 質問に関連する Well-Architected pillar(s) を `mcp__aws__search_documentation` で検索 (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability)
+   - サービス特化の質問なら、そのサービスの "best practices" ページを検索 (主要サービスにはたいてい存在)
+   - 関連 1〜3 ページを読む
 
-2. **Frame the answer as a recommendation + tradeoffs**, not a verdict
-   - Lead with the recommended approach in 1-2 sentences
-   - List 2-4 concrete tradeoffs (cost, complexity, lock-in, blast radius)
-   - Cite the AWS doc(s) you pulled from with markdown links
-   - If multiple valid answers exist (e.g. ECS vs Lambda), say so and give the decision rule
+2. **「推奨 + tradeoffs」の形で回答する。判定 (verdict) ではない**
+   - 推奨アプローチを 1〜2 文で先に示す
+   - 具体的な tradeoff を 2〜4 個リスト (コスト、複雑度、ロックイン、blast radius など)
+   - 引いた AWS doc を markdown link で出典明示
+   - 複数の妥当解があれば (例: ECS vs Lambda)、そう伝えて意思決定ルールを示す
 
-3. **Flag risks the user didn't ask about**
-   - Common ones: IAM over-privileging, public S3, missing encryption-at-rest, no backup retention, single-AZ resources, secrets in plain config
-   - Limit to 2-3 — don't drown the response
+3. **ユーザーが聞いていないリスクも flag する**
+   - よくあるやつ: IAM 過剰権限、public S3、暗号化未設定、バックアップ retention 無し、single-AZ リソース、平文設定にシークレット
+   - 2〜3 個までに抑える (drown させない)
 
-## Do NOT
+## してはいけないこと
 
-- Don't read AWS resource state via `call_aws` unless the user explicitly asks ("look at my actual VPC"). This skill is advisory, not investigative.
-- Don't recommend services you haven't verified are still GA / available in the user's region.
-- Don't give a single "right answer" when AWS docs themselves present alternatives — surface the alternatives.
-- Don't combine with [[aws-docs]] automatically. They're separate intents.
+- ユーザーが明示要求しない限り `call_aws` で実リソース状態を読まない (「実際の VPC 見て」と言われたら別)。この skill は advisory であって investigative ではない。
+- まだ GA か / ユーザーのリージョンで使えるか確認していないサービスを推奨しない。
+- AWS docs 自体が複数の選択肢を示している場面で「唯一の正解」を断定しない — 選択肢を surface する。
+- [[aws-docs]] と自動連結しない。別の intent。

@@ -1,43 +1,56 @@
 ---
 name: ship
-description: Take current work all the way to a GitHub Pull Request. Creates a feature branch if needed, generates a commit message from the diff, pushes, and opens a PR via `gh`. Trigger when the user asks to ship/submit/finalize work, open or create a PR, or says things like "ship it", "PR出して", "PR作って", "送って", "プルリク", "make a PR", "open a PR", "let's ship this", or otherwise indicates they want the current changes turned into a reviewable PR.
+description: 現在の作業を GitHub Pull Request にまで持っていく。必要ならフィーチャーブランチを切り、差分からコミットメッセージと PR タイトル/本文を生成し、push して `gh pr create` で PR を開く。ユーザーが「ship して」「PR出して」「PR作って」「送って」「プルリク」「ship it」「open a PR」「make a PR」「let's ship this」など、現在の変更を PR にしたい意図を示したときに発動する。
 ---
 
 # ship
 
-End-to-end "I'm done, turn this into a PR" workflow. Each step has a STOP rule — do not auto-recover from violations, surface them.
+「変更を PR まで持っていく」end-to-end ワークフロー。各ステップに STOP 条件あり。違反したら自動回復せず必ずユーザーに見せる。
 
-## 0. Preflight (all must pass — STOP on failure)
+## 🚫 絶対に守るルール
 
-Run in parallel:
-- `gh auth status` — must be logged in. If not, tell user to `gh auth login` and STOP.
-- `git rev-parse --is-inside-work-tree` — must be true.
-- `git remote -v` — must have an `origin` pointing at github.com. If not, ask the user: `gh repo create` now, or abort?
-- `git status --porcelain` AND `git log @{u}..HEAD 2>/dev/null` — there must be either uncommitted changes OR unpushed commits. If neither, tell user there is nothing to ship and STOP.
+- **main / master / default branch に直接 push してはいけない。** 例外なし。
+- フィーチャーブランチを必ず作成・使用する。これは soft な推奨ではなく hard guard。
+- `git push origin main` / `git push origin master` を実行しそうになったら **必ず STOP** してユーザーに確認。
 
-## 1. Branch
+## 0. Preflight (全項目 pass 必須 — 1 つでも失敗したら STOP)
 
-- `git branch --show-current` and `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
-- If on the default branch (main/master/etc.):
-  - Look at `git diff` to pick a **kebab-case branch name**, 3-6 words, prefixed by type when obvious: `feat/`, `fix/`, `docs/`, `chore/`, `refactor/`.
-  - `git checkout -b <name>`.
-- Otherwise: use the current branch.
-- Never rename an existing branch.
+並列で実行:
+- `gh auth status` — ログイン必須。未ログインなら `gh auth login` を案内して STOP。
+- `git rev-parse --is-inside-work-tree` — true でなければ STOP。
+- `git remote -v` — `origin` が github.com を指している必要あり。無ければユーザーに「`gh repo create` する？それとも中止？」と確認。
+- `git status --porcelain` または `git log @{u}..HEAD 2>/dev/null` — 未コミット変更 OR 未 push コミットのどちらかが存在しなければ「ship するものが無い」と伝えて STOP。
+
+## 1. Branch (hard guard)
+
+```sh
+current=$(git branch --show-current)
+default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
+```
+
+- **`current` が `default` と一致する場合** (= main や master にいる):
+  - **絶対にこのブランチで commit/push してはいけない。**
+  - `git diff` を見て kebab-case のブランチ名を 3〜6 語で生成。明らかな type prefix があれば付ける: `feat/`, `fix/`, `docs/`, `chore/`, `refactor/`。
+  - `git checkout -b <name>` で新ブランチを切る。
+- **それ以外**: 現在のブランチをそのまま使う。
+- **既存ブランチを rename しない。**
+
+この後どのステップでも、push 先が default branch でないことを `git rev-parse --abbrev-ref HEAD` で再確認すること。
 
 ## 2. Stage
 
-- `git status --porcelain` to see what's modified/untracked.
-- Stage **only** files relevant to the change, **by explicit path**. Never `git add -A` / `git add .` — they sweep in `.DS_Store`, accidental logs, IDE files.
-- If you see any of these in the unstaged list, STOP and ask the user before staging: `.env*`, `*.pem`, `*.key`, `credentials*`, `id_rsa*`, anything that looks like a token or secret.
-- If the user has unrelated changes mixed in, ask which to include rather than guessing.
+- `git status --porcelain` で変更内容を確認。
+- 関連ファイルのみ **明示的なパス指定で** stage する。`git add -A` / `git add .` は **絶対禁止** (`.DS_Store`、ログ、IDE 設定ファイルなどを巻き込む)。
+- 未 stage のリストに次のいずれかが見えたら **STOP してユーザーに確認**: `.env*`, `*.pem`, `*.key`, `credentials*`, `id_rsa*`, その他 token / secret らしきもの。
+- 無関係な変更が混在していたら、推測せずどれを含めるかユーザーに聞く。
 
-## 3. Commit (skip if there are only unpushed commits to ship)
+## 3. Commit (未 push コミットのみで ship する場合はスキップ)
 
-Generate a message from the **staged diff**:
-- **Subject:** ≤72 chars, imperative mood ("Add X", not "Added X" / "Adds X"), no trailing period.
-- **Body:** optional. 1-3 short sentences on the *why* if it isn't obvious from the diff. Skip the body for trivial changes.
-- Show the user the proposed message **before** committing. Offer to edit.
-- Commit via HEREDOC to preserve formatting:
+**staged diff から** メッセージを生成:
+- **Subject**: 72 文字以内、命令形 ("Add X" であって "Added X" / "Adds X" ではない)、末尾ピリオド無し。
+- **Body**: 任意。差分から自明でない *why* を 1〜3 文。trivial な変更ならスキップ。
+- commit 前に **必ずメッセージをユーザーに見せて** 編集の機会を与える。
+- HEREDOC で commit (フォーマット保持):
   ```sh
   git commit -m "$(cat <<'EOF'
   <subject>
@@ -46,30 +59,39 @@ Generate a message from the **staged diff**:
   EOF
   )"
   ```
-- If pre-commit hooks fail: fix the underlying issue, re-stage, create a **new** commit. Do NOT `--amend` or `--no-verify`.
+- pre-commit hook が失敗したら: 根本原因を fix → 再 stage → **新しい commit** を作成。`--amend` や `--no-verify` は使わない。
 
-## 4. Push
+## 4. Push (default branch への push は absolute STOP)
 
-- New branch: `git push -u origin HEAD`.
-- Existing branch with upstream: `git push`.
-- If push is rejected as non-fast-forward: STOP. Do NOT `--force` or `--force-with-lease` without explicit user confirmation. Show them the rejection and ask.
+```sh
+# push する前に必ずチェック
+branch=$(git rev-parse --abbrev-ref HEAD)
+default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
+if [ "$branch" = "$default" ]; then
+  echo "ERROR: default branch ($default) への push は禁止"; exit 1
+fi
+```
+
+- 新ブランチ: `git push -u origin HEAD`
+- 既存ブランチ (upstream あり): `git push`
+- non-fast-forward で reject された場合: **STOP**。`--force` / `--force-with-lease` はユーザーの明示確認なしに使わない。
 
 ## 5. PR
 
-- Resolve base branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
-- Gather context across **all** commits on this branch:
+- base branch 解決: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`
+- このブランチの **全コミット** からコンテキストを集める:
   - `git log <base>..HEAD --pretty=format:'%s%n%n%b'`
   - `git diff <base>...HEAD --stat`
-- **Title:** ≤70 chars. Often matches the latest/primary commit subject. If multiple commits, summarize the umbrella change.
-- **Body:** use this structure:
+- **Title**: 70 文字以内。最新/主要 commit subject に揃えることが多い。複数 commit なら umbrella な要約を。
+- **Body** はこの構造:
   ```
   ## Summary
-  - <1-3 bullets, what changed and why>
+  - <1〜3 個の bullet。何が変わって何のため>
 
   ## Test plan
-  - [ ] <how to verify>
+  - [ ] <検証方法>
   ```
-- Create with HEREDOC for body formatting:
+- HEREDOC で create:
   ```sh
   gh pr create --base <base> --title "<title>" --body "$(cat <<'EOF'
   ## Summary
@@ -80,18 +102,20 @@ Generate a message from the **staged diff**:
   EOF
   )"
   ```
-- If a PR already exists for this branch (`gh pr view` returns one), don't create a duplicate — show the URL and ask if the user wants to update title/body instead.
+- このブランチに既に PR がある (`gh pr view` で取得できる) なら **重複作成しない**。URL を見せて title/body を更新するか確認。
 
-## 6. Report
+## 6. 報告
 
-- Print the PR URL on its own line (so the terminal makes it clickable).
-- Do NOT auto-merge, auto-request reviewers, or push more changes. Stop here.
+- PR URL を **1 行で** 出力 (ターミナルで clickable になるように)。
+- claude-forge の自動レビュー workflow が repo に入っていれば、`Claude PR Review` と `Claude Security Review` が走り始める。Checks タブを見るよう案内。
+- 自動 merge、reviewer 自動追加、追加 push はしない。ここで終了。
 
-## Things NOT to do
+## やってはいけないこと
 
-- No `git push --force` without explicit confirmation, ever.
-- No `gh pr merge`. The user decides when to merge.
-- No `git commit --amend` to "fix" a failed hook — make a new commit.
-- No skipping hooks (`--no-verify`, `--no-gpg-sign`) unless the user explicitly asked.
-- No committing `.env`, key files, or anything matching common secret patterns.
-- No `git add -A` / `git add .` — always stage by explicit path.
+- `git push --force` をユーザーの明示確認なしに実行。
+- `gh pr merge` を実行。merge はユーザーの判断。
+- 失敗した hook を `--amend` で「修正」する。新 commit を作る。
+- `--no-verify` / `--no-gpg-sign` で hook / 署名をスキップ (ユーザー明示要求がない限り)。
+- `.env`、key file、その他 secret パターンを commit する。
+- `git add -A` / `git add .` で雑に stage する。**必ず明示パス指定。**
+- **main / master / default branch に直接 push する。**
