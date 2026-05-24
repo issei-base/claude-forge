@@ -79,18 +79,25 @@ description で自動発火 (model-invoked)。明示的に呼びたい時は `/s
 
 **merge は手動。** Workflow / ship skill は merge を絶対に行わない。Claude のレビューを読んだ上で人間が判断。
 
-**ベストプラクティスとしての Branch Protection** (claude-forge では有効化済み):
-- `main` への直接 push 不可
-- PR merge に **承認 (approving review) 1 件以上** 必須
-- 必須 status check: `Claude PR Review` (PASS = approve / FAIL = request-changes) と `Claude Security Review` (critical/high あれば exit 1 で fail)
-- 新しい commit が push されたら過去の approve は dismiss (`dismiss_stale_reviews`)
-- inline コメントは resolve 必須 (`required_conversation_resolution`)
-- force push / branch 削除 禁止
-- 緊急時のため admin (issei-base) は bypass 可 (`enforce_admins: false`)
+### Branch Protection: claude-forge では **off**
 
-設定コマンド (このリポジトリで既に実行済み):
+このリポジトリは Solo dev の dotfiles なので **Branch Protection は有効化していません**。理由:
+- approve を Claude bot に頼る運用は、`anthropics/claude-code-action` v1 の sandbox 仕様で `gh pr review` 系を実行できず安定しなかった (permission denials 多発)
+- approve 必須の Protection を残すと、Solo dev では毎回 admin bypass の儀式が発生して実益がない
+- main への直 push は `ship` skill 側の hard guard でガードしている (ツール強制ではなく規律で担保)
+
+### 運用フロー (現状)
+
+1. `ship` skill で PR 作成 (ラベル `claude-review` 自動付与)
+2. `Claude PR Review` / `Claude Security Review` workflow が起動 → 動作した時は inline コメントを post (現状は前述の仕様で空のまま終わるケースが多い)
+3. **内容を見てユーザーが手動で merge**
+
+### (参考) チーム repo で Branch Protection を効かせる場合
+
+将来 claude-forge 構成を team repo に流用する時の reference として、効かせる場合の設定例を残しておく:
+
 ```sh
-gh api -X PUT /repos/issei-base/claude-forge/branches/main/protection --input - <<'EOF'
+gh api -X PUT /repos/<OWNER>/<REPO>/branches/main/protection --input - <<'EOF'
 {
   "required_status_checks": { "strict": false, "contexts": ["Claude PR Review", "Claude Security Review"] },
   "enforce_admins": false,
@@ -104,13 +111,9 @@ gh api -X PUT /repos/issei-base/claude-forge/branches/main/protection --input - 
 EOF
 ```
 
-**運用フロー** (Solo dev 向け):
-1. `ship` skill で PR 作成 (ラベル `claude-review` 自動付与)
-2. `Claude PR Review` workflow が起動 → Claude が inline コメント + `--approve` または `--request-changes` を post
-3. `Claude Security Review` workflow が起動 → critical/high あれば step を fail (= check fail)
-4. 両方 OK ならユーザーが内容を確認して **手動で merge**
-5. critical/high 修正が必要なら commit を push (stale approve は自動 dismiss、再度 Claude review が走る)
-6. 緊急時のみ admin が Branch Protection を bypass して force merge 可 (使用は最小限に)
+- 人間のチームメイトが review/approve する文化があるリポジトリではこの設定が有効
+- Claude bot に approve を担わせる前提なら、加えて workflow の `with:` に `settings: '{"permissions":{"allow":["Bash(gh:*)"]}}'` 追加 + `Bash(gh pr review:*)` 許可が必要 (未検証、別途 debug が必要)
+- Free プランの **private repo では Branch Protection / Rulesets が使えない**。public または GitHub Pro が前提
 
 ### claude-forge 自身で動かす前提
 

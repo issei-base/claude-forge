@@ -111,7 +111,7 @@ fi
 
 - PR URL を **1 行で** 出力 (ターミナルで clickable になるように)。
 - ラベル `claude-review` が付いていれば `Claude PR Review` と `Claude Security Review` workflow が走り始める。Checks タブを見るよう案内。
-- **Branch Protection 下では**: review が `approve` を出し、かつ security check が pass しないと merge ボタンが押せない。Claude が `request-changes` を出した場合は、commit 修正 → 再 push → 再 review というループ。
+- Workflow からの review コメントは **参考情報**。claude-forge では Branch Protection 無しの運用なので、ユーザーが内容を見て自分で merge ボタンを押す (他リポジトリで Branch Protection を有効化している場合は、その条件に従って判断)。
 - 自動 merge、追加 push はしない。**merge は必ずユーザーが手動で行う方針**。ここで終了。
 
 ## やってはいけないこと
