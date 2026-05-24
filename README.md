@@ -82,6 +82,39 @@ cd ~/projects/claude-forge
 
 **merge は手動。** Workflow / ship skill は merge を絶対に行わない。Claude のレビューを読んだ上で人間が判断。
 
+**ベストプラクティスとしての Branch Protection** (claude-forge では有効化済み):
+- `main` への直接 push 不可
+- PR merge に **承認 (approving review) 1 件以上** 必須
+- 必須 status check: `Claude PR Review` (PASS = approve / FAIL = request-changes) と `Claude Security Review` (critical/high あれば exit 1 で fail)
+- 新しい commit が push されたら過去の approve は dismiss (`dismiss_stale_reviews`)
+- inline コメントは resolve 必須 (`required_conversation_resolution`)
+- force push / branch 削除 禁止
+- 緊急時のため admin (issei-base) は bypass 可 (`enforce_admins: false`)
+
+設定コマンド (このリポジトリで既に実行済み):
+```sh
+gh api -X PUT /repos/issei-base/claude-forge/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": { "strict": false, "contexts": ["Claude PR Review", "Claude Security Review"] },
+  "enforce_admins": false,
+  "required_pull_request_reviews": { "required_approving_review_count": 1, "dismiss_stale_reviews": true, "require_code_owner_reviews": false },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_conversation_resolution": true,
+  "required_linear_history": false
+}
+EOF
+```
+
+**運用フロー** (Solo dev 向け):
+1. `ship` skill で PR 作成 (ラベル `claude-review` 自動付与)
+2. `Claude PR Review` workflow が起動 → Claude が inline コメント + `--approve` または `--request-changes` を post
+3. `Claude Security Review` workflow が起動 → critical/high あれば step を fail (= check fail)
+4. 両方 OK ならユーザーが内容を確認して **手動で merge**
+5. critical/high 修正が必要なら commit を push (stale approve は自動 dismiss、再度 Claude review が走る)
+6. 緊急時のみ admin が Branch Protection を bypass して force merge 可 (使用は最小限に)
+
 ### claude-forge 自身で動かす前提
 
 3 つすべてが揃って初めて動く:
