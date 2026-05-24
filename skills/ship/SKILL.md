@@ -91,9 +91,12 @@ fi
   ## Test plan
   - [ ] <検証方法>
   ```
+- **Assignee**: `--assignee @me` でユーザー自身を assignee に設定する (PR の所有者が UI で明確になる)。
+- **Label**: `--label claude-review` を必ず付ける。これが付いている PR を `anthropics/claude-code-action` が拾って自動レビュー / セキュリティチェックを返す。
+  - ラベルがそのリポジトリに未作成だと `gh pr create --label` がエラーになる。事前に `gh label list -R <repo> --json name -q '.[].name' | grep -q '^claude-review$' || gh label create claude-review --color 1F6FEB --description "Claude が自動レビューする PR" -R <repo>` で存在保証。
 - HEREDOC で create:
   ```sh
-  gh pr create --base <base> --title "<title>" --body "$(cat <<'EOF'
+  gh pr create --base <base> --assignee @me --label claude-review --title "<title>" --body "$(cat <<'EOF'
   ## Summary
   - ...
 
@@ -107,13 +110,13 @@ fi
 ## 6. 報告
 
 - PR URL を **1 行で** 出力 (ターミナルで clickable になるように)。
-- claude-forge の自動レビュー workflow が repo に入っていれば、`Claude PR Review` と `Claude Security Review` が走り始める。Checks タブを見るよう案内。
-- 自動 merge、reviewer 自動追加、追加 push はしない。ここで終了。
+- ラベル `claude-review` が付いていれば `Claude PR Review` と `Claude Security Review` workflow が走り始める。Checks タブを見るよう案内。
+- 自動 merge、追加 push はしない。**merge は必ずユーザーが手動で行う方針**。ここで終了。
 
 ## やってはいけないこと
 
 - `git push --force` をユーザーの明示確認なしに実行。
-- `gh pr merge` を実行。merge はユーザーの判断。
+- **`gh pr merge` を絶対に実行しない。** merge はユーザーが Claude のレビュー結果を読んだ上で手動で行う。ユーザーが明示的に「merge して」と言わない限り絶対やらない。
 - 失敗した hook を `--amend` で「修正」する。新 commit を作る。
 - `--no-verify` / `--no-gpg-sign` で hook / 署名をスキップ (ユーザー明示要求がない限り)。
 - `.env`、key file、その他 secret パターンを commit する。

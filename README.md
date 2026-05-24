@@ -73,26 +73,33 @@ cd ~/projects/claude-forge
 
 ## PR 自動レビュー workflow
 
-`.github/workflows/` に 2 つの workflow を置いている:
+`.github/workflows/` に 2 つの workflow を置いている。**`claude-review` ラベルが付いた PR でのみ起動** する (ship skill が PR 作成時に自動付与)。ラベル無しの PR は無視されるので、軽微な変更で quota を無駄遣いしない。
 
 | Workflow | 役割 |
 |---|---|
-| `claude-review.yml` | PR opened/synchronize で Claude が一般レビュー (正しさ / 可読性 / テスト / パフォーマンス) を inline コメント |
-| `claude-security-review.yml` | 同 trigger で Claude がセキュリティ専用レビュー (OWASP / secret / 認可 / 暗号誤用 / 依存脆弱性) を inline コメント |
+| `claude-review.yml` | 一般レビュー (正しさ / 可読性 / テスト / パフォーマンス) を inline コメント |
+| `claude-security-review.yml` | セキュリティ専用レビュー (OWASP / secret / 認可 / 暗号誤用 / 依存脆弱性) を inline コメント |
 
-### 自分の repo (claude-forge) で動かすには
+**merge は手動。** Workflow / ship skill は merge を絶対に行わない。Claude のレビューを読んだ上で人間が判断。
 
-GitHub repo の Secrets に `CLAUDE_CODE_OAUTH_TOKEN` を登録する:
-```sh
-claude setup-token        # OAuth token を発行
-gh secret set CLAUDE_CODE_OAUTH_TOKEN -R issei-base/claude-forge   # 貼り付け
-```
-これで次の PR から自動でレビューが走る。
+### claude-forge 自身で動かす前提
 
-### 他の repo にも入れるには
+3 つすべてが揃って初めて動く:
+1. **`id-token: write` permission**: workflow ファイルに記載済み
+2. **`CLAUDE_CODE_OAUTH_TOKEN` secret** (Pro/Max サブスク使用時):
+   ```sh
+   claude setup-token        # OAuth token を発行
+   gh secret set CLAUDE_CODE_OAUTH_TOKEN -R issei-base/claude-forge  # ★ 対話プロンプトに貼り付け (チャット/履歴に出さない)
+   ```
+   API key を使う場合は `ANTHROPIC_API_KEY` を同手順で。
+3. **Claude Code GitHub App をインストール**: https://github.com/apps/claude → `claude-forge` を選択
 
-別の repo の中で:
+**初回 workflow 追加 PR は自分自身をレビューできない**。Anthropic action のセキュリティ機能 (PR の workflow と main の workflow が一致するか検証) で skip される。merge 後の PR から動くようになる。
+
+### 他リポジトリに横展開する
+
+そのリポジトリの中で:
 ```
 /install-pr-reviews
 ```
-を実行すると `.github/workflows/` に 2 つの yml がコピーされる。その後同様に `gh secret set CLAUDE_CODE_OAUTH_TOKEN` を実行。
+を実行。workflow 2 ファイルのコピー + `claude-review` ラベル作成 + GitHub App / secret 設定の案内が出る。
