@@ -194,7 +194,7 @@ Agent tool:
 - PASS → Phase 7 へ進む
 - 最大3回で打ち切り（WARN や 3回FAIL でもそのまま Phase 7 へ。レビュー状況は完了報告でユーザに伝える）
 
-PR修正は新規実装より変更スコープが小さいため、サイクル上限は implement-sre-issue（5回）より少なく設定している。
+PR修正は新規実装より変更スコープが小さいため、サイクル上限は implement-issue（5回）より少なく設定している。
 
 ## Phase 7: コミット・push
 
@@ -344,7 +344,7 @@ PRが Issue と紐づいている場合のみ実施する。
 
 #### 編集対象コメントの特定
 
-implement-sre-issue 等で投稿された「実装PRを作成しました」コメントを編集対象とする。
+implement-issue 等で投稿された「実装PRを作成しました」コメントを編集対象とする。
 
 ```bash
 gh issue view <Issue URL> --json comments --jq '.comments[] | select(.author.login == "<自分のlogin>") | {id, body, createdAt}'
@@ -360,7 +360,7 @@ gh issue view <Issue URL> --json comments --jq '.comments[] | select(.author.log
 
 > **`gh api -X PATCH` は permission denied になる可能性がある。** PATCH を1回試して denied なら、**リトライせず即 Step 9-3 の新規コメント追加**にフォールバックする。
 >
-> なぜ `--edit-last` を使わないか: fix-pr が動くセッションでは、編集対象のコメントは別セッション（implement-sre-issue 等）で投稿されたものを編集するケースがあり、現セッションの最終投稿とは限らないため `--edit-last` ではズレる。
+> なぜ `--edit-last` を使わないか: fix-pr が動くセッションでは、編集対象のコメントは別セッション（implement-issue 等）で投稿されたものを編集するケースがあり、現セッションの最終投稿とは限らないため `--edit-last` ではズレる。
 
 ```bash
 gh api -X PATCH /repos/<owner>/<repo>/issues/comments/<comment_id> \

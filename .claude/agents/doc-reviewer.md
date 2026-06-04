@@ -49,7 +49,7 @@ color: cyan
       "related": ["Cookie", "カナリアリリース"]
     },
     "document_type": "technical_analysis",
-    "target_audience": ["SRE", "インフラエンジニア"],
+    "target_audience": ["インフラエンジニア"],
     "issue_count": { "critical": 0, "major": 1, "minor": 3, "suggestion": 5 }
   },
   "technical_accuracy": {

@@ -36,7 +36,7 @@ description: >-
   curl -sL https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md | head -60
   ```
 - **claude-forge の実物 skill**: この repo の `.claude/skills/*/SKILL.md` 自体がネタの宝庫
-  (doc-illustrate の図解、ship の hard guard、SRE 系の自動化など「作った話」)。
+  (doc-illustrate の図解、ship の hard guard、Issue/PR 系の自動化など「作った話」)。
 - **実務知見**: ユーザーの指導・AWS・運用で得た非自明な学び。必要なら本人に一言確認。
 - **海外バズの型**: WebSearch で直近の英語圏バズ投稿/解析を拾い、**型として**参考にする
   (中身はコピーしない)。フック例は [references/post-patterns.md](references/post-patterns.md)。

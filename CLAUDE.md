@@ -28,7 +28,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 
 - **スラッシュコマンドは作らない。すべて skill に統合**する (Anthropic の方針)。`commands/` は置かない。明示呼びは `/<skill-name>`。
 - **skill を足す/直す時**は `.claude/skills/<name>/SKILL.md` を編集 (新規は `_template/SKILL.md.tmpl` を土台に)。frontmatter の `name` と `description` を正確に — `description` が自動発火のトリガなので、発動すべきフレーズ例を具体的に書く。`name` は必ずディレクトリ名と一致させる (ズレると skill が呼べない)。新規 skill は `tests/triggers.json` に fixture を最低 1 つ足す (正例 + 紛らわしい負例)。無いと CI lint (`--strict`) と Stop hook の W2 が指摘する。
-- **`gh`/`git` 等の外部コマンドを叩く skill は `allowed-tools` で最小スコープを宣言**する (例: `create-sre-issue` / `plan-sre-issue` の frontmatter)。実際の権限ゲートは `.claude/settings.json` の allow-list + 対話承認 + ship の hard guard だが、SKILL.md 側にも宣言しておくと意図が明示され読み手にも優しい。
+- **`gh`/`git` 等の外部コマンドを叩く skill は `allowed-tools` で最小スコープを宣言**する (例: `create-issue` / `plan-issue` の frontmatter)。実際の権限ゲートは `.claude/settings.json` の allow-list + 対話承認 + ship の hard guard だが、SKILL.md 側にも宣言しておくと意図が明示され読み手にも優しい。
 - **SKILL.md を編集したターンは Stop hook (`skill-lint.py`) が `tests/lint_skills.py` を強制**する。`name`↔dir ズレ・description 欠落・名前重複・SKILL.md 欠落ディレクトリ (E6) があるとターンが止まる。同じ lint は CI (`.github/workflows/skill-lint.yml`) でも `--strict` で走る多層防御 (Stop hook はローカル限定)。意図的にスキップしたい時だけ環境変数 `SKILL_LINT_HOOK=0`。
 - **正確さが要る skill** (`aws-docs` / `aws-advisor` / `doc-illustrate`) は、記憶ではなく一次ソースから答える。数値・価格・上限・コマンド構文は逐語引用し、出典を残す。Web 取得は要約モデルを挟まない生テキスト優先 (`curl`、docs は `.md`、AWS は `aws` MCP)。
 - **コミットしないもの**: `.claude/settings.local.json` / `*.local.*`、secrets (API key・token)、個人 MCP の vault/絶対パス、`summaries/` / `INTERESTS.md` / `data/` の生成物、受講生の個人情報や非公開 URL。
