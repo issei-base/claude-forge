@@ -1,6 +1,7 @@
 ---
 name: ship
 description: 現在の作業を GitHub Pull Request にまで持っていく。必要ならフィーチャーブランチを切り、差分からコミットメッセージと PR タイトル/本文を生成し、push して `gh pr create` で PR を開く。ユーザーが「ship して」「PR出して」「PR作って」「送って」「プルリク」「ship it」「open a PR」「make a PR」「let's ship this」など、現在の変更を PR にしたい意図を示したときに発動する。
+allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remote:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh repo view:*), Bash(gh repo create:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*)
 ---
 
 # ship
@@ -92,11 +93,9 @@ fi
   - [ ] <検証方法>
   ```
 - **Assignee**: `--assignee @me` でユーザー自身を assignee に設定する (PR の所有者が UI で明確になる)。
-- **Label**: `--label claude-review` を必ず付ける。これが付いている PR を `anthropics/claude-code-action` が拾って自動レビュー / セキュリティチェックを返す。
-  - ラベルがそのリポジトリに未作成だと `gh pr create --label` がエラーになる。事前に `gh label list -R <repo> --json name -q '.[].name' | grep -q '^claude-review$' || gh label create claude-review --color 1F6FEB --description "Claude が自動レビューする PR" -R <repo>` で存在保証。
 - HEREDOC で create:
   ```sh
-  gh pr create --base <base> --assignee @me --label claude-review --title "<title>" --body "$(cat <<'EOF'
+  gh pr create --base <base> --assignee @me --title "<title>" --body "$(cat <<'EOF'
   ## Summary
   - ...
 
@@ -106,18 +105,24 @@ fi
   )"
   ```
 - このブランチに既に PR がある (`gh pr view` で取得できる) なら **重複作成しない**。URL を見せて title/body を更新するか確認。
+- PR レビューは Codex GitHub code review を標準にする。repository-wide automatic reviews が有効なら追加操作は不要。
+- automatic reviews が有効か不明で、ユーザーが one-off review も望む場合のみ、PR 作成後に次を実行する:
+  ```sh
+  gh pr comment <PR URL> --body "@codex review"
+  ```
+- legacy の `claude-review` ラベルは、その repo が意図して Claude GitHub Actions workflows を使い続けている場合だけ付ける。新規 repo へは標準では付けない。
 
 ## 6. 報告
 
 - PR URL を **1 行で** 出力 (ターミナルで clickable になるように)。
-- ラベル `claude-review` が付いていれば `Claude PR Review` と `Claude Security Review` workflow が走り始める。Checks タブを見るよう案内。
-- Workflow からの review コメントは **参考情報**。claude-forge では Branch Protection 無しの運用なので、ユーザーが内容を見て自分で merge ボタンを押す (他リポジトリで Branch Protection を有効化している場合は、その条件に従って判断)。
+- Codex review が automatic / `@codex review` / 未依頼のどれかを明記する。
+- Review コメントは **参考情報**。claude-forge では Branch Protection 無しの運用なので、ユーザーが内容を見て自分で merge ボタンを押す (他リポジトリで Branch Protection を有効化している場合は、その条件に従って判断)。
 - 自動 merge、追加 push はしない。**merge は必ずユーザーが手動で行う方針**。ここで終了。
 
 ## やってはいけないこと
 
 - `git push --force` をユーザーの明示確認なしに実行。
-- **`gh pr merge` を絶対に実行しない。** merge はユーザーが Claude のレビュー結果を読んだ上で手動で行う。ユーザーが明示的に「merge して」と言わない限り絶対やらない。
+- **`gh pr merge` を絶対に実行しない。** merge はユーザーがレビュー結果を読んだ上で手動で行う。ユーザーが明示的に「merge して」と言わない限り絶対やらない。
 - 失敗した hook を `--amend` で「修正」する。新 commit を作る。
 - `--no-verify` / `--no-gpg-sign` で hook / 署名をスキップ (ユーザー明示要求がない限り)。
 - `.env`、key file、その他 secret パターンを commit する。

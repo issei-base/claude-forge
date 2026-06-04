@@ -15,6 +15,11 @@ tools/
 # (detect_lessons / line_notify / morning_lesson_notify) だけが残る。ローカル専用。
 .claude/skills/ohayou/
 
+# 個人運用の skill。ローカルでは (symlink 経由で) 使うが、public repo には出さない。
+# `git rm --cached` で追跡だけ外し、ファイルはディスクに残す (ohayou と同じ扱い)。
+.claude/skills/x-buzz/
+.claude/skills/lesson-homework/
+
 # doc-illustrate が生成する HTML 要約。claude-forge は public repo なので
 # 追跡しない（ローカル保管のみ）。出力先はプロジェクト直下 summaries/。
 summaries/
@@ -23,7 +28,7 @@ summaries/
 # public repo には絶対に出さない（スキルのコードだけ公開し、プロファイルは非公開）。
 INTERESTS.md
 
-# data/ は skill の実行時生成物の置き場 (x-buzz の投稿ログ/dedup/キュー、
+# data/ は skill の実行時生成物の置き場 (各 skill の投稿ログ/dedup/キュー、
 # interest-profile、ohayou の各種 state、LINE/X キャッシュ等)。いずれも個人データを
 # 含むかマシンローカルで churn するだけなので、.gitkeep 以外は丸ごと追跡しない。
 # 個別列挙ではなく総称ルールにすることで、将来 skill が新しいログ名で吐いても

@@ -9,7 +9,7 @@ skills themselves follow.
 Frontmatter shapes seen in this repo and handled here:
   - ``name: ship``                       (bare scalar)
   - ``description: "..."`` / ``'...'``   (quoted scalar)
-  - ``description: >-`` + indented body  (YAML folded block scalar, e.g. x-buzz)
+  - ``description: >-`` + indented body  (YAML folded block scalar)
 """
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
-# Dirs under skills/ that intentionally have NO SKILL.md and must not be linted
-# as skills. `ohayou` is a retired skill kept only for a launchd cron (gitignored,
-# holds private data); dirs starting with `_` or `.` are scaffolds/scratch
-# (e.g. `_template`). See find_orphan_dirs() for how these are skipped.
-IGNORED_SKILL_DIRS = {"ohayou"}
+# Dirs under skills/ that are intentionally local-only / retired and must not be
+# linted as public skills. They are gitignored and may be present locally without
+# a SKILL.md; dirs starting with `_` or `.` are scaffolds/scratch (e.g.
+# `_template`). See find_orphan_dirs() for how these are skipped.
+IGNORED_SKILL_DIRS = {"ohayou", "lesson-homework", "x-buzz"}
 
 _KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):\s?(.*)$")
 _BLOCK_INDICATORS = {">", ">-", ">+", "|", "|-", "|+"}
