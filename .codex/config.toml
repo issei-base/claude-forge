@@ -1,0 +1,10 @@
+# Project-local Codex configuration. Codex will ask to trust repo-local hooks
+# before running them.
+
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'python3 "$(git rev-parse --show-toplevel)/.codex/hooks/skill-lint.py"'
+timeout = 30
+statusMessage = "Running skill lint"

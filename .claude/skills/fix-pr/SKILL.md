@@ -2,6 +2,7 @@
 name: fix-pr
 argument-hint: "[pr-url] [修正内容]"
 description: "既存のGitHub PRをworktree上で修正し、PR本文と関連Issueコメントまで一括で更新するスキル。PR URLとともに修正依頼を受け取り、ローカルworktreeの探索／不在ならworktree作成→コード修正→push→PR本文の全面更新→Issueコメント編集まで自動で完走する。以下の場合に使用: (1) PR URLを渡されて「PR修正して」「PRに○○を追加して」「レビュー指摘対応して」と依頼された場合 (2) 「/fix-pr」と呼び出された場合 (3) 他のスキル（PRレビュー結果対応等）から委譲された場合 (4) PR URLとともに変更内容・修正方針を渡されて反映を依頼された場合。新規PR作成（create-pr）や、PR本文だけを書き換える単純編集には使用しない。"
+allowed-tools: Read, Write, Edit, Glob, Grep, Agent, Bash(git:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh pr checks:*), Bash(gh repo clone:*), Bash(gh run list:*), Bash(gh run view:*), Bash(gh issue view:*), Bash(gh issue comment:*), Bash(gh api:*), Bash(sleep:*), Bash(timeout:*), Bash(ls:*), Bash(awk:*), Bash(tr:*), Bash(terraform fmt:*), Bash(terraform validate:*), Bash(terraform plan:*), Bash(prettier:*), Bash(npx prettier:*), Bash(eslint:*), Bash(npx eslint:*), Bash(ruff:*), Bash(golangci-lint:*)
 ---
 
 # Fix PR

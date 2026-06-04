@@ -2,6 +2,7 @@
 name: create-pr
 description: "変更をコミットして GitHub PR を作成する自動化エンジン。ブランチ作成→ステージング→コミット→push→PR 作成→CI 自動修正ループまでをユーザ確認なしで一括実行する。以下の場合に使用: (1) 「/create-pr」と明示的に呼ばれた場合 (2) implement-issue / fix-pr など他スキルから PR 作成を委譲された場合。コミットメッセージを確認しながらインタラクティブに PR を出したい場合は ship スキルを使う。単にコミットだけ・push だけしたい場合は使わない。"
 argument-hint: "[branch] [commit-message]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git stash:*), Bash(git pull:*), Bash(git checkout:*), Bash(git rev-parse:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh repo view:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh pr checks:*), Bash(gh run list:*), Bash(gh run view:*), Bash(sleep:*), Bash(timeout:*), Bash(terraform fmt:*), Bash(terraform validate:*), Bash(terraform plan:*), Bash(prettier:*), Bash(npx prettier:*), Bash(eslint:*), Bash(npx eslint:*), Bash(ruff:*), Bash(golangci-lint:*)
 ---
 
 # Create PR
@@ -190,24 +191,24 @@ PR本文は **「レビュアーが diff を読み始める前に欲しい情報
 PR は **draft** で作成する（人間が内容を確認してから ready/merge する claude-forge の方針に合わせる）。
 
 ```bash
-# claude-review ラベルがこの repo に既に存在する場合のみ付与する。
-# (PR 自動レビュー workflow を入れているリポジトリ向け。無いリポジトリには作らない＝ノイズを出さない)
-LABEL_OPT=""
-if gh label list --json name -q '.[].name' 2>/dev/null | grep -q '^claude-review$'; then
-  LABEL_OPT="--label claude-review"
-fi
-
 gh pr create \
   --draft \
   --base <デフォルトブランチ> \
   --assignee @me \
-  $LABEL_OPT \
   --title "<PRタイトル>" \
   --body "$(cat <<'EOF'
 <PR本文>
 EOF
 )"
 ```
+
+Codex GitHub automatic reviews が有効なら追加操作は不要。未設定/不明で one-off review も必要な文脈なら、作成後に:
+
+```bash
+gh pr comment <PR URL> --body "@codex review"
+```
+
+legacy の `claude-review` ラベルは、その repo が意図して Claude GitHub Actions workflows を使い続けている場合だけ付ける。新規 repo へは標準では付けない。
 
 **重要：**
 - `--base` には Step 1 で取得したデフォルトブランチ名（main or master）を必ず指定する。
@@ -287,7 +288,7 @@ PR を作成しました: <PR URL>
 ```
 
 CI が PASS 以外で終わった場合は、失敗ジョブ名と直近の失敗概要を 1-3 行で添える。
-**merge はしない** — claude-review ラベルが付いていれば自動レビューが走るので、ユーザがそれを読んで手動 merge する。
+**merge はしない** — Codex GitHub code review / CI の結果をユーザが読んで手動 merge する。
 
 ## エラーハンドリング
 

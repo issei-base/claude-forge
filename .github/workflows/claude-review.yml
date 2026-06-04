@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   review:
-    # `claude-review` ラベルが付いている PR でのみ起動。ship skill が自動付与する。
-    # ラベルを外せばレビューが走らないので、quota を消費したくない PR (typo fix 等) を除外できる。
+    # Legacy fallback: `claude-review` ラベルが付いている PR でのみ起動。
+    # 標準の PR review は Codex GitHub code review / `@codex review` に寄せる。
     if: contains(github.event.pull_request.labels.*.name, 'claude-review')
     runs-on: ubuntu-latest
     timeout-minutes: 15
