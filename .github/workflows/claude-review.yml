@@ -6,9 +6,13 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  id-token: write  # anthropics/claude-code-action requires GitHub OIDC token
+  pull-requests: write   # inline review comments
+  id-token: write        # anthropics/claude-code-action requires a GitHub OIDC token
+
+concurrency:
+  # 連続 push のたびに前の実行をキャンセルし、quota を無駄遣いしない。
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
@@ -24,10 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Claude code review
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@70a6e5256e9e2366a1ed5c041904a982ba3a328f # v1
         with:
           # Pro/Max サブスクリプションを使う場合: `claude setup-token` で生成した
           # OAuth token を repo secrets に CLAUDE_CODE_OAUTH_TOKEN として登録。
@@ -51,15 +52,5 @@ jobs:
 
             セキュリティ観点は別 workflow (Claude Security Review) が担当するため、ここでは深追いしないでください。
 
-            ★ **最後に必ず PR review state を確定させてください**。Branch Protection の "Required approving review" を満たすために必須です。bash tool で以下を実行:
-
-            ```sh
-            # critical/high が無い場合
-            gh pr review "$PR_NUMBER" -R "$REPO" --approve --body "Claude PR Review: 問題は見つかりませんでした (or low/medium のみ)"
-
-            # critical または high の指摘がある場合
-            gh pr review "$PR_NUMBER" -R "$REPO" --request-changes --body "Claude PR Review: critical/high 指摘あり。inline コメントを参照して対応してください"
-            ```
-
-            - approve は楽観的にしない。critical/high が 1 件でもあれば必ず request-changes。
-            - 判断保留 (情報不足等) の場合は review state を出さず、その旨を PR コメントに 1 行残す。
+            最後に、指摘の要約 (critical/high の有無と件数) を PR にサマリーコメントとして 1 つ残してください。指摘ゼロなら「問題は見つかりませんでした」と明記。
+            approve / request-changes の review state は付けません (このリポジトリは Branch Protection off で、merge は人間が手動判断するため)。

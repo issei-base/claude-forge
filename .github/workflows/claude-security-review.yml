@@ -6,9 +6,12 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  id-token: write  # anthropics/claude-code-action requires GitHub OIDC token
+  pull-requests: write   # inline review comments
+  id-token: write        # anthropics/claude-code-action requires a GitHub OIDC token
+
+concurrency:
+  group: claude-security-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   security:
@@ -23,10 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Claude security review
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@70a6e5256e9e2366a1ed5c041904a982ba3a328f # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -49,17 +49,6 @@ jobs:
             - 各指摘の冒頭に severity tag を付けてください: `[critical]` `[high]` `[medium]` `[low]`
             - 推測ベース・FUD は避ける。根拠 (攻撃シナリオ) を 1 文で添える
 
-            ★ **最後にこの workflow step の exit code を制御してください**。Branch Protection の Required status check として merge をブロックするために必須です:
-
-            ```sh
-            # critical / high のセキュリティ指摘が 1 件もない場合
-            gh pr review "$PR_NUMBER" -R "$REPO" --comment --body "Claude Security Review: 重大なセキュリティ懸念は見つかりませんでした"
-            # 正常終了 (step は success → check pass → merge 可)
-
-            # critical または high が 1 件でもある場合
-            gh pr review "$PR_NUMBER" -R "$REPO" --comment --body "Claude Security Review: critical/high のセキュリティ指摘あり。inline コメントを参照"
-            exit 1   # step を fail させる (check fail → Branch Protection で merge ブロック)
-            ```
-
-            - approve / request-changes は **使わない** (review workflow がそれを担当する)。
-            - 「念のため」「ベストプラクティス的に」では critical/high にしない。具体的な攻撃シナリオが書ける指摘のみ。
+            最後に、検出した critical/high の件数を PR にサマリーコメントとして 1 つ残してください。重大な懸念がゼロなら「重大なセキュリティ懸念は見つかりませんでした」と明記。
+            approve / request-changes の review state は付けません (このリポジトリは Branch Protection off で、merge は人間が手動判断するため)。
+            「念のため」「ベストプラクティス的に」では critical/high にしない。具体的な攻撃シナリオが 1 文で書ける指摘のみ。

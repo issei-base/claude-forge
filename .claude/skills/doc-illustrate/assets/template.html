@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- TITLE: ページ内容に差し替え -->
+<title>__TITLE__</title>
+<!-- 手描き風の丸ゴシック + マーカー体。ネット接続時のみ綺麗に出る。フォールバックは下の CSS で担保 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF6EC; --bg-card:#FFFDF8; --ink:#34302A; --ink-soft:#6E6557;
+    --accent:#E0722C; --accent-deep:#C2410C; --accent-2:#2F80A8;
+    --highlight:#F8D25B; --green:#4F9D69; --green-bg:#E4F0E2;
+    --pink-bg:#FBE3DD; --pink-bd:#E3A99E; --pink-ink:#B14A38;
+    --line:#E8DCC6; --shadow:rgba(60,50,40,.13);
+    --disp:"Yusei Magic","Zen Maru Gothic",system-ui,sans-serif;
+    --body:"Zen Maru Gothic",system-ui,"Hiragino Maru Gothic ProN",sans-serif;
+    --hand:"Yomogi","Zen Maru Gothic",cursive;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+    line-height:1.85;font-size:17px;
+    background-image:radial-gradient(var(--line) 1px,transparent 1px);
+    background-size:22px 22px;background-position:-11px -11px;}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 22px 96px}
+  p{margin:.6em 0}
+  a{color:var(--accent-deep);text-decoration:none;border-bottom:2px dotted var(--accent)}
+  a:hover{background:#fbe9d8}
+
+  /* ===== マーカー / キーワード強調（インライン） ===== */
+  .marker{background:linear-gradient(transparent 58%,var(--highlight) 58% 92%,transparent 92%);
+    padding:0 .1em;font-weight:700}
+  .kw{color:var(--accent-deep);font-weight:700}
+  .chip{display:inline-block;font-size:.78em;font-weight:700;padding:.12em .7em;border-radius:999px;
+    background:#fff;border:2px solid var(--ink);transform:rotate(-1.5deg);margin:0 .15em}
+
+  /* ===== HERO（表紙ヘッダー） ===== */
+  .hero{text-align:center;margin:8px 0 14px}
+  .hero .eyebrow{font-family:var(--hand);color:var(--accent);font-size:1rem;letter-spacing:.04em}
+  .hero h1{font-family:var(--disp);font-size:clamp(28px,6vw,46px);line-height:1.25;margin:.15em 0 .25em}
+  .hero .sub{color:var(--ink-soft);font-size:1.02rem}
+  .divider{height:14px;margin:18px auto 6px;max-width:320px;
+    background:radial-gradient(circle,var(--accent) 0 3px,transparent 3px) 0/22px 100% repeat-x;opacity:.55}
+
+  /* ===== 結論ボックス（TL;DR） ===== */
+  .tldr{position:relative;background:var(--bg-card);border:2.5px solid var(--ink);
+    border-radius:20px 26px 20px 26px;padding:22px 24px 20px;margin:26px 0;
+    box-shadow:5px 6px 0 var(--shadow)}
+  .tldr::before{content:"結論";position:absolute;top:-15px;left:22px;background:var(--accent);color:#fff;
+    font-family:var(--disp);font-size:.92rem;padding:.1em .9em;border-radius:999px;
+    border:2.5px solid var(--ink);transform:rotate(-2deg)}
+  .tldr p{margin:.35em 0}
+
+  /* ===== セクション見出し（番号付き） ===== */
+  .section{margin:46px 0 8px}
+  .section-head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .sec-num{font-family:var(--disp);background:var(--accent);color:#fff;font-size:1.05rem;
+    min-width:2.4em;text-align:center;padding:.18em .4em;border-radius:10px 14px 10px 14px;
+    border:2.5px solid var(--ink);transform:rotate(-2deg)}
+  .section-head h2{font-family:var(--disp);font-size:clamp(21px,3.6vw,28px);margin:0}
+  .section-head .en{color:var(--accent-2);font-size:.62em;font-family:var(--hand)}
+
+  /* ===== ①②③ 特徴カード（横並び） ===== */
+  .features{display:flex;gap:16px;flex-wrap:wrap;margin:22px 0}
+  .feat{flex:1 1 200px;background:var(--bg-card);border:2.5px solid var(--ink);
+    border-radius:18px 22px 16px 22px;padding:20px 18px 16px;box-shadow:4px 5px 0 var(--shadow);
+    position:relative}
+  .feat:nth-child(odd){transform:rotate(-1deg)} .feat:nth-child(even){transform:rotate(1deg)}
+  .feat-num{position:absolute;top:-14px;left:14px;width:30px;height:30px;border-radius:50%;
+    background:var(--highlight);border:2.5px solid var(--ink);display:grid;place-items:center;
+    font-family:var(--disp);font-size:.95rem}
+  .feat-ic{font-size:2rem;display:block;margin:6px 0 4px}
+  .feat-title{font-family:var(--disp);font-size:1.12rem;margin:.1em 0 .3em}
+  .feat-desc{font-size:.92rem;color:var(--ink-soft);margin:0;line-height:1.6}
+
+  /* ===== コールアウト（注意・補足・コツ） ===== */
+  .callout{border:2.5px solid var(--ink);border-radius:16px 20px 16px 20px;padding:16px 20px;
+    margin:22px 0;box-shadow:4px 5px 0 var(--shadow)}
+  .callout .label{font-family:var(--disp);font-size:.92rem;display:block;margin-bottom:.2em}
+  .callout.note{background:var(--pink-bg);border-color:var(--pink-bd)}
+  .callout.note .label{color:var(--pink-ink)}
+  .callout.tip{background:var(--green-bg);border-color:#9ec8a4}
+  .callout.tip .label{color:var(--green)}
+
+  /* ===== 吹き出し（手描き注釈） ===== */
+  .bubble{position:relative;display:inline-block;background:#fff;border:2.5px solid var(--ink);
+    border-radius:16px;padding:10px 16px;font-family:var(--hand);font-size:.92rem;
+    box-shadow:3px 3px 0 var(--shadow);margin:8px 0}
+  .bubble::after{content:"";position:absolute;left:28px;bottom:-12px;width:16px;height:16px;
+    background:#fff;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);
+    transform:rotate(45deg)}
+
+  /* ===== ステップ（縦の手順フロー） ===== */
+  .steps{list-style:none;padding:0;margin:22px 0;position:relative}
+  .steps li{position:relative;padding:4px 0 18px 52px;border-left:3px dashed var(--accent);
+    margin-left:16px}
+  .steps li:last-child{border-left-color:transparent}
+  .step-num{position:absolute;left:-16px;top:0;width:32px;height:32px;border-radius:50%;
+    background:var(--accent);color:#fff;border:2.5px solid var(--ink);display:grid;place-items:center;
+    font-family:var(--disp)}
+  .steps b{font-family:var(--disp);font-weight:400}
+
+  /* ===== 2カラム比較（before/after・A vs B） ===== */
+  .compare{display:flex;gap:16px;flex-wrap:wrap;margin:22px 0}
+  .compare>div{flex:1 1 240px;background:var(--bg-card);border:2.5px solid var(--ink);
+    border-radius:16px;padding:16px 18px;box-shadow:4px 5px 0 var(--shadow)}
+  .compare h4{font-family:var(--disp);margin:.1em 0 .4em}
+
+  /* ===== 逐語引用（上限・数値・syntax をそのまま） ===== */
+  .quote{background:#fff;border:2.5px solid var(--ink);border-left-width:8px;border-radius:8px;
+    padding:12px 16px;margin:18px 0;font-family:var(--mono);font-size:.9rem;
+    overflow-x:auto;box-shadow:3px 4px 0 var(--shadow)}
+
+  /* ===== データ表（上限・料金・比較を格子で。数値が並ぶ時はベタ書きより表が読みやすい） ===== */
+  .dtable{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;font-size:.92rem;
+    background:var(--bg-card);border:2.5px solid var(--ink);border-radius:14px;overflow:hidden;
+    box-shadow:4px 5px 0 var(--shadow)}
+  .dtable th,.dtable td{padding:10px 14px;text-align:left;border-bottom:1.5px solid var(--line)}
+  .dtable thead th{font-family:var(--disp);background:#F3E9D6}
+  .dtable tr:last-child td{border-bottom:none}
+  .dtable td.num{font-family:var(--mono);font-weight:700;color:var(--accent-deep)}
+
+  /* ===== ゲージ（連続スペクトル・強弱の比喩。effort dial 的な図） ===== */
+  .gauge{display:block;max-width:420px;margin:18px auto}
+  .gauge text{font-family:var(--disp);fill:var(--ink)}
+
+  /* ===== 出典フッター ===== */
+  .source{margin-top:54px;padding-top:18px;border-top:3px dashed var(--line);
+    font-size:.86rem;color:var(--ink-soft)}
+  .source a{font-weight:700}
+  .source .gen{display:block;margin-top:.4em;font-size:.78rem;opacity:.7}
+
+  @media print{body{background:#fff}.feat,.tldr,.callout,.compare>div{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============================================================
+       これはテンプレート（部品カタログ）。使い方:
+       1. <style> はそのまま残す（デザインシステム）。
+       2. 下の各ブロックを、ページ内容に合わせて中身だけ差し替える。
+       3. 使わない部品は削除。順番も自由。出典フッターは必ず残す。
+       各部品の詳しい使い分けは references/visual-style.md 参照。
+       ============================================================ -->
+
+  <!-- HERO: 表紙。eyebrow=分野ラベル / h1=一番言いたいこと（marker で強調）/ sub=一行サマリ -->
+  <header class="hero">
+    <div class="eyebrow">Amazon S3 ・ ストレージ入門</div>
+    <h1>バケットは<span class="marker">「無限に伸びる箱」</span></h1>
+    <p class="sub">容量を気にせず、置いた分だけ払う。サーバー不要のオブジェクトストレージ。</p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- TL;DR: 最初に結論。受講生が「で、何が嬉しいの？」を即つかめるように 2〜3 文で -->
+  <div class="tldr">
+    <p>S3 は<span class="kw">容量無制限</span>のファイル置き場。サーバーを立てずに、写真・動画・バックアップを置けて、<span class="marker">置いた分だけ課金</span>。1ファイル最大 5TB まで。</p>
+  </div>
+
+  <!-- FEATURES: ①②③ で「ポイント3つ」を並べる。アイコンは絵文字、title は短く、desc は一行 -->
+  <div class="features">
+    <div class="feat"><span class="feat-num">①</span>
+      <span class="feat-ic">📦</span>
+      <p class="feat-title">容量無制限</p>
+      <p class="feat-desc">事前のサイズ確保が不要。増えても勝手に伸びる。</p>
+    </div>
+    <div class="feat"><span class="feat-num">②</span>
+      <span class="feat-ic">💰</span>
+      <p class="feat-title">使った分だけ</p>
+      <p class="feat-desc">置いた容量とアクセス回数で課金。初期費用ゼロ。</p>
+    </div>
+    <div class="feat"><span class="feat-num">③</span>
+      <span class="feat-ic">🌐</span>
+      <p class="feat-title">どこからでも</p>
+      <p class="feat-desc">URL でアクセス。静的サイトの公開もできる。</p>
+    </div>
+  </div>
+
+  <!-- SECTION: 番号付き見出し。sec-num は連番、en は英語の正式名（任意） -->
+  <section class="section">
+    <div class="section-head">
+      <span class="sec-num">01</span>
+      <h2>そもそも「オブジェクトストレージ」って？ <span class="en">object storage</span></h2>
+    </div>
+    <p>フォルダ階層ではなく、ファイル(=オブジェクト)を<span class="kw">フラットな箱</span>に放り込むタイプの保存方式。一つひとつにキー(名前)が付き、それで取り出す。</p>
+
+    <!-- BUBBLE: 手描き注釈。たとえ話・コツ・つまずきポイントを添える -->
+    <div class="bubble">「フォルダ」に見えるのは表示上の演出。実体は名前(キー)だけ！</div>
+  </section>
+
+  <!-- STEPS: 手順や流れを縦に。b で各ステップの見出し -->
+  <section class="section">
+    <div class="section-head"><span class="sec-num">02</span><h2>使い始めるまでの流れ</h2></div>
+    <ol class="steps">
+      <li><span class="step-num">1</span><b>バケットを作る</b><br>世界で一意の名前を付ける。リージョンを選ぶ。</li>
+      <li><span class="step-num">2</span><b>ファイルを置く</b><br>ドラッグ&ドロップ or CLI で <span class="kw">aws s3 cp</span>。</li>
+      <li><span class="step-num">3</span><b>アクセス権を決める</b><br>既定は非公開。公開したい時だけポリシーで開ける。</li>
+    </ol>
+  </section>
+
+  <!-- COMPARE: A vs B / before-after の2カラム -->
+  <div class="compare">
+    <div><h4>🟢 向いてる</h4>画像・動画・ログ・バックアップ・静的サイト配信</div>
+    <div><h4>🔴 向かない</h4>頻繁に一部だけ書き換えるDB用途、低レイテンシな読み書き</div>
+  </div>
+
+  <!-- QUOTE: 上限・数値・コマンド構文は「言い換えず」そのまま。AWS の数字は特に逐語で -->
+  <div class="quote">1 オブジェクトの最大サイズ: 5 TB / 1 回の PUT: 最大 5 GB（それ以上はマルチパートアップロード）</div>
+
+  <!-- DTABLE: 上限・料金・比較が「項目×値」の格子になる時。数値セルは class="num" で強調。値は原典のまま逐語 -->
+  <table class="dtable">
+    <thead><tr><th>ストレージクラス</th><th>取り出し</th><th>相対コスト</th></tr></thead>
+    <tbody>
+      <tr><td>S3 Standard</td><td>即時</td><td class="num">高</td></tr>
+      <tr><td>S3 Glacier Flexible Retrieval</td><td>数分〜数時間</td><td class="num">低</td></tr>
+      <tr><td>S3 Glacier Deep Archive</td><td>最大 12 時間</td><td class="num">最安</td></tr>
+    </tbody>
+  </table>
+
+  <!-- CALLOUT note(ピンク=注意) / tip(緑=コツ) -->
+  <div class="callout note"><span class="label">⚠️ つまずきポイント</span>
+    バケット名は<strong>全世界で一意</strong>。よくある名前は既に取られていて作れない。</div>
+  <div class="callout tip"><span class="label">💡 受講生へのひとこと</span>
+    まずは1つバケットを作って画像を1枚置いてみよう。「公開URLで開く」まで触ると一気に理解が進む。</div>
+
+  <!-- GAUGE: 連続スペクトル（強弱・速い⇔深いなど）を表したい時だけ使う。
+       針の角度は <g transform="rotate(角度 200 170)"> の「角度」を -75(左端)〜75(右端) で調整 -->
+  <section class="section">
+    <div class="section-head"><span class="sec-num">03</span><h2>ストレージクラスの選び方</h2></div>
+    <!-- 色はインラインに hex を直書きせず var(--*) で。:root の --accent を変えれば追従する。
+         針角度は rotate(角度 200 170) の「角度」を -75(左端)〜75(右端) で調整。
+         aria-label に図が示す結論を必ず書く（読み上げ・印刷時の代替）。 -->
+    <svg class="gauge" viewBox="0 0 400 210" role="img" aria-label="ストレージクラスのスペクトル。針は Standard 付近を指す">
+      <path d="M40 170 A160 160 0 0 1 360 170" fill="none" stroke="var(--line)" stroke-width="22" stroke-linecap="round"/>
+      <path d="M40 170 A160 160 0 0 1 200 10" fill="none" stroke="var(--accent-2)" stroke-width="22" stroke-linecap="round" opacity=".5"/>
+      <path d="M200 10 A160 160 0 0 1 360 170" fill="none" stroke="var(--accent)" stroke-width="22" stroke-linecap="round" opacity=".5"/>
+      <g transform="rotate(20 200 170)"><line x1="200" y1="170" x2="200" y2="40" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/><circle cx="200" cy="170" r="11" fill="var(--highlight)" stroke="var(--ink)" stroke-width="3"/></g>
+      <text x="40" y="200" font-size="15" text-anchor="middle">安い・低頻度</text>
+      <text x="360" y="200" font-size="15" text-anchor="middle">高速・高頻度</text>
+      <text x="200" y="150" font-size="14" text-anchor="middle" fill="var(--ink-soft)">Standard</text>
+    </svg>
+    <p style="text-align:center;color:var(--ink-soft);font-size:.9rem">よく使うなら Standard。滅多に出さない保管は Glacier 系で大幅節約。</p>
+  </section>
+
+  <!-- SOURCE: 必ず残す。出典の一次ソースへのリンク + 生成メタ。
+       __SOURCE_PUBLISHER__ は発行元に差し替え（例: AWS 公式ドキュメント / Claude・Anthropic 公式ドキュメント）。
+       __SOURCE_URL__ はユーザーが踏む正規の入口 URL（リダイレクトされても元の URL）を使う。
+       __PUBLISH_DATE__ は原典の公開日（分かる時だけ。無ければこの ( ) ごと削除）。
+       __DATE__ はこの資料を作った日（生成日）。公開日と混同しない。 -->
+  <footer class="source">
+    出典: <a href="__SOURCE_URL__">__SOURCE_TITLE__</a>（__SOURCE_PUBLISHER__ / __PUBLISH_DATE__）<br>
+    <span class="gen">この資料は上記ページを要約・図解したものです。正確な仕様・最新の数値は必ず原典をご確認ください。 / 生成: __DATE__</span>
+  </footer>
+
+</div>
+</body>
+</html>

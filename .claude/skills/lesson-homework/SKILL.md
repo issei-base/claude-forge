@@ -151,5 +151,5 @@ print(s)"` で計算可。
 
 ## 関連
 
-- 認証セットアップは [[gws-setup]] (未作成)、または README の gws セクション参照。
-- 書き込み権限を含む scope で auth する必要あり: `gws auth login --services sheets --full` (or `--scopes` で sheets read/write を指定)。
+- 認証 (`gws` の OAuth) セットアップは上の **Preflight 4** を参照。`gws auth status` で確認し、未認証なら `gws auth setup --login` でブラウザ認証する（初回のみ）。
+- 書き込みには **sheets の read/write scope** を含めて認証しておく必要がある（読み取りのみなら CSV export で認証不要）。
