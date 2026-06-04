@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: "変更をコミットして GitHub PR を作成する自動化エンジン。ブランチ作成→ステージング→コミット→push→PR 作成→CI 自動修正ループまでをユーザ確認なしで一括実行する。以下の場合に使用: (1) 「/create-pr」と明示的に呼ばれた場合 (2) implement-sre-issue / fix-pr など他スキルから PR 作成を委譲された場合。コミットメッセージを確認しながらインタラクティブに PR を出したい場合は ship スキルを使う。単にコミットだけ・push だけしたい場合は使わない。"
+description: "変更をコミットして GitHub PR を作成する自動化エンジン。ブランチ作成→ステージング→コミット→push→PR 作成→CI 自動修正ループまでをユーザ確認なしで一括実行する。以下の場合に使用: (1) 「/create-pr」と明示的に呼ばれた場合 (2) implement-issue / fix-pr など他スキルから PR 作成を委譲された場合。コミットメッセージを確認しながらインタラクティブに PR を出したい場合は ship スキルを使う。単にコミットだけ・push だけしたい場合は使わない。"
 argument-hint: "[branch] [commit-message]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "[branch] [commit-message]"
 変更のコミットから GitHub PR 作成までを一括で行う自動化エンジン。
 **全ステップを自動で実行し、ユーザに確認を求めず PR URL を返す。**
 
-> **ship との使い分け:** 対話的に (コミットメッセージを見せて承認してもらいながら) PR を出すなら `ship`。本スキルは「止まらずに PR まで作る + CI 失敗を自動修正する」エンジンで、主に implement-sre-issue / fix-pr から委譲される。
+> **ship との使い分け:** 対話的に (コミットメッセージを見せて承認してもらいながら) PR を出すなら `ship`。本スキルは「止まらずに PR まで作る + CI 失敗を自動修正する」エンジンで、主に implement-issue / fix-pr から委譲される。
 
 ## Usage
 

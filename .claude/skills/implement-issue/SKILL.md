@@ -1,7 +1,7 @@
 ---
-name: implement-sre-issue
+name: implement-issue
 argument-hint: "[issue-url | doc-path]"
-description: "GitHub IssueのURLまたはドキュメントパスを受け取り、要件分析→コードベース調査→実装→レビューサイクル→PR作成までを自動で行うスキル。以下の場合に使用: (1) GitHub Issue URLを渡されて「実装して」「これやって」と依頼された場合 (2) ドキュメントパスを渡されて「実装して」と依頼された場合 (3) 「/implement-sre-issue」と呼び出された場合 (4) Issue URLやドキュメントを渡されて実装からPR作成までを一気通貫で依頼された場合。明示的に実装を求められていない場合（計画だけ、調査だけ等）は使用しない。"
+description: "GitHub IssueのURLまたはドキュメントパスを受け取り、要件分析→コードベース調査→実装→レビューサイクル→PR作成までを自動で行うスキル。以下の場合に使用: (1) GitHub Issue URLを渡されて「実装して」「これやって」と依頼された場合 (2) ドキュメントパスを渡されて「実装して」と依頼された場合 (3) 「/implement-issue」と呼び出された場合 (4) Issue URLやドキュメントを渡されて実装からPR作成までを一気通貫で依頼された場合。明示的に実装を求められていない場合（計画だけ、調査だけ等）は使用しない。"
 ---
 
 # Implement Issue
@@ -9,12 +9,10 @@ description: "GitHub IssueのURLまたはドキュメントパスを受け取り
 GitHub IssueのURLまたはドキュメントパスを入力として、要件理解→実装→レビュー→PR作成までを自動で遂行する。
 **実装計画のユーザ確認以外は、全フェーズを自動で完了させる。途中で止まらない。**
 
-> 名前に "sre" が付くが、対象は SRE タスクに限らない。個人開発の任意の Issue / 設計ドキュメントの実装に使える。
-
 ## Usage
 
 ```
-/implement-sre-issue <Issue URL or ドキュメントパス>
+/implement-issue <Issue URL or ドキュメントパス>
 ```
 
 ## ワークフロー全体像
@@ -57,7 +55,7 @@ gh issue view <URL> --json title,body,labels,assignees,milestone,comments
 - 受け入れ条件（Acceptance Criteria）
 - 技術的なキーワード・制約
 - 関連Issue・PRへの言及
-- **対応方針がコメントに書かれている場合はそれを優先採用する**（plan-sre-issue で投稿した計画コメントがあれば最優先）
+- **対応方針がコメントに書かれている場合はそれを優先採用する**（plan-issue で投稿した計画コメントがあれば最優先）
 
 ### ドキュメントパスの場合
 
