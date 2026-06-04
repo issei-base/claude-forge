@@ -1,0 +1,39 @@
+name: Skill Lint
+
+# Deterministic gate for skill integrity, in CI as a backstop to the local
+# Stop hook (.claude/hooks/skill-lint.py). The hook only fires for whoever has
+# the project open locally; this catches a broken SKILL.md (name<->dir mismatch,
+# missing description, duplicate name) on any PR — e.g. edited via the web UI or
+# a machine without the hook. Pure stdlib Python, no Claude, no secrets, no tokens.
+
+on:
+  pull_request:
+    paths:
+      - ".claude/skills/**"
+      - "tests/**"
+  push:
+    branches: [main]
+    paths:
+      - ".claude/skills/**"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      # --strict: in CI, warnings (e.g. a skill with no triggers.json fixture)
+      # are errors too. Locally the Stop hook runs without --strict so a missing
+      # fixture only warns and never blocks the turn.
+      - run: python3 tests/lint_skills.py --strict

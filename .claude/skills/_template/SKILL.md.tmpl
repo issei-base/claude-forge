@@ -1,0 +1,42 @@
+# 新規 skill の雛形 (SKILL.md.tmpl)
+
+このファイルは **テンプレート**。`.md.tmpl` 拡張子なので Claude Code は skill として
+登録しない (登録されるのは `SKILL.md` だけ)。新しい skill を作るときはこれを土台に:
+
+```sh
+mkdir -p .claude/skills/<name>
+sed 's/<name>/<name>/' .claude/skills/_template/SKILL.md.tmpl > .claude/skills/<name>/SKILL.md
+# (frontmatter の name を <name> に置換して保存する)
+```
+
+---
+
+下の `--- ... ---` から下を新しい `SKILL.md` にコピーして使う:
+
+```markdown
+---
+name: <name>
+description: "<この skill の自動発火トリガ。発動させたい具体フレーズ例を必ず複数入れる（「〇〇して」「△△を××して」）。紛らわしい既存 skill があれば [[other-skill]] で関係と境界を書く。発動させたくないケースも明記（「単に〜なだけなら使わない」）。40 文字以上。>"
+---
+
+# <name>
+
+この skill が何をするか・誰のための作業かを 1〜2 文で。
+
+## 手順
+
+model 向けの手順をここに。SKILL.md 本体がそのままドキュメント。
+込み入った人間向け補足は references/、補助スクリプトは scripts/ に置く。
+```
+
+---
+
+## 新規 skill チェックリスト
+
+1. `name` を **ディレクトリ名と完全一致**させる (ズレると呼べない)。
+2. `description` に発動フレーズ例を具体的に (自動発火のトリガ)。
+3. `tests/triggers.json` に fixture を最低 1 つ追加 (正例 + 紛らわしい負例)。無いと
+   `lint --strict` (CI) と Stop hook の W2 が指摘する。
+4. `gh`/`git` 等を叩くなら `allowed-tools:` で最小スコープを宣言 (CLAUDE.md 参照)。
+5. README「現在の skill」表に 1 行追記。
+6. 編集ターン終了時に Stop hook が `lint_skills.py` を強制 — 緑になるまで直す。

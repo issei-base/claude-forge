@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # GitHub Actions を SHA pin しているので、新リリースの追従は Dependabot に任せる
+  # (claude-code-action / checkout / setup-python の更新 PR を週次で開く)。
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies

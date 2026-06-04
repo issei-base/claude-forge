@@ -1,76 +1,64 @@
 #!/usr/bin/env bash
-# Wire ~/.claude/{skills,agents,hooks} → this repo's directories.
-# Idempotent: existing real directories are backed up to *.bak-<timestamp>,
-# existing symlinks pointing here are left alone, anything else aborts.
+# Symlink every claude-forge skill + agent into the user scope (~/.claude) so the
+# toolkit is available in *all* projects, while the single source of truth stays
+# here in claude-forge (edit once, every project sees it).
 #
-# Note: ~/.claude/commands は **意図的に管理外**。すべて Skills に統合する方針
-# (Anthropic の最近のガイドライン)。slash command が欲しい場合は対応する skill を
-# `/skill-name` で明示呼びすればよい。古い ~/.claude/commands のシンボリックリンクは
-# `rm ~/.claude/commands` で手動削除してください (broken link を放置すると無害だが
-# 混乱の元)。
-
+# Idempotent: re-run any time. Uses `ln -sfn`, so it refreshes stale links and is
+# safe to run after adding a skill. Skips scaffold/retired dirs:
+#   - names starting with `_` or `.` (e.g. `_template`)
+#   - any dir without a SKILL.md (e.g. `ohayou`, a retired skill kept only for a
+#     local cron — it is .gitignored and must not be globally linked)
+#
+# Usage:
+#   ./install.sh            # link skills + agents into ~/.claude
+#   ./install.sh --dry-run  # print what would be linked, change nothing
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_DIR="$HOME/.claude"
-TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+DRY_RUN=0
+[ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
-mkdir -p "$CLAUDE_DIR"
+# Resolve the repo root from this script's real location (works via symlink too).
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+REPO_ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
-link_dir() {
-  local name="$1"
-  local target="$REPO_DIR/$name"
-  local link="$CLAUDE_DIR/$name"
+SKILLS_SRC="$REPO_ROOT/.claude/skills"
+AGENTS_SRC="$REPO_ROOT/.claude/agents"
+SKILLS_DST="$HOME/.claude/skills"
+AGENTS_DST="$HOME/.claude/agents"
 
-  mkdir -p "$target"
-
-  if [[ -L "$link" ]]; then
-    local current
-    current="$(readlink "$link")"
-    if [[ "$current" == "$target" ]]; then
-      echo "  [skip] $link → already linked"
-      return
-    fi
-    echo "  [warn] $link points to $current — leaving as is. Remove manually if you want to relink."
-    return
+link() {  # link <src> <dst>
+  local src="$1" dst="$2"
+  if [ "$DRY_RUN" = 1 ]; then
+    echo "  would link $(basename "$dst")"
+  else
+    ln -sfn "$src" "$dst"
+    echo "  linked $(basename "$dst")"
   fi
-
-  if [[ -d "$link" ]]; then
-    local backup="${link}.bak-${TIMESTAMP}"
-    echo "  [backup] $link → $backup"
-    mv "$link" "$backup"
-    # carry over any existing files into the repo (one-time merge)
-    if [[ -n "$(ls -A "$backup" 2>/dev/null || true)" ]]; then
-      echo "  [merge] copying contents of $backup into $target (skipping conflicts)"
-      cp -n -R "$backup"/. "$target/" 2>/dev/null || true
-    fi
-  elif [[ -e "$link" ]]; then
-    echo "  [error] $link exists and is not a directory or symlink — aborting"
-    exit 1
-  fi
-
-  ln -s "$target" "$link"
-  echo "  [link]  $link → $target"
 }
 
-echo "Linking Claude Code customization directories..."
-for d in skills agents hooks; do
-  link_dir "$d"
+mkdir -p "$SKILLS_DST" "$AGENTS_DST"
+
+echo "skills → $SKILLS_DST"
+for dir in "$SKILLS_SRC"/*/; do
+  name="$(basename "$dir")"
+  case "$name" in _* | .*) echo "  [skip] $name (scaffold)"; continue ;; esac
+  if [ ! -f "$dir/SKILL.md" ]; then
+    echo "  [skip] $name (no SKILL.md — retired/cron-only)"
+    continue
+  fi
+  link "${dir%/}" "$SKILLS_DST/$name"
 done
 
-# 旧版で ~/.claude/commands を symlink していた場合、broken link を掃除
-if [[ -L "$CLAUDE_DIR/commands" ]]; then
-  current="$(readlink "$CLAUDE_DIR/commands")"
-  if [[ "$current" == "$REPO_DIR/commands" ]]; then
-    echo "  [cleanup] $CLAUDE_DIR/commands は broken symlink (本 repo の commands/ は削除済)。rm します"
-    rm "$CLAUDE_DIR/commands"
-  fi
-fi
+echo "agents → $AGENTS_DST"
+for f in "$AGENTS_SRC"/*.md; do
+  [ -e "$f" ] || continue
+  link "$f" "$AGENTS_DST/$(basename "$f")"
+done
 
-echo
-echo "Done. ~/.claude is wired to:"
-ls -la "$CLAUDE_DIR" | grep -E ' -> ' || true
-
-echo
-echo "Note: ~/.claude/settings.json is NOT symlinked (Claude Code rewrites it at runtime)."
-echo "See settings/settings.example.json for a template you can hand-merge."
+echo "done. user-scope skills inherit ~/.claude/settings.json permissions —"
+echo "add codex/gws/aws etc. there if you want them in every project."
