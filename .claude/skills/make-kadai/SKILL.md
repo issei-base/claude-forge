@@ -28,10 +28,12 @@ allowed-tools: Read, Write, Skill, Bash(python3:*), Bash(gcloud config get-value
 Sheets API は user OAuth で叩く。トークンは ADC から取得する。**未認証なら `read`/`write` が止まり、セットアップコマンドを出す**ので、それをユーザーに実行してもらう:
 
 ```sh
-gcloud auth application-default login --scopes=https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/userinfo.email,openid
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/userinfo.email,openid
 ```
 
-（ブラウザが開く → **対象シートを編集できる Google アカウント**で承認）。`python3 scripts/sheet_kadai.py auth-check` が `{"auth":"ok"}` を返せば準備完了。Sheets API が quota project で無効と言われたら `gcloud services enable sheets.googleapis.com`。
+（ブラウザが開く → **対象シートを編集できる Google アカウント**で承認）。`cloud-platform` は ADC 必須スコープ（無いと login が弾かれる）。`python3 scripts/sheet_kadai.py auth-check` が `{"auth":"ok"}` を返せば準備完了。Sheets API が quota project で無効と言われたら `gcloud services enable sheets.googleapis.com`。
+
+> **将来の注意**: gcloud の既定クライアント ID は `spreadsheets` スコープを順次ブロック予定（login 時に WARNING が出る）。ブロックされたら独自 OAuth クライアント ID かサービスアカウント impersonation に切り替える（`--scopes` だけでは解決しない）。当面は上記で通る。
 
 ## ワークフロー
 

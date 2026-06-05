@@ -32,7 +32,13 @@ import urllib.parse
 import urllib.request
 
 SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
-SCOPES = "https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/userinfo.email,openid"
+# gcloud ADC は cloud-platform スコープを必須とする（無いと login が弾かれる）。
+# spreadsheets はシート読み書き、userinfo.email/openid は承認アカウント確認用。
+SCOPES = (
+    "https://www.googleapis.com/auth/cloud-platform,"
+    "https://www.googleapis.com/auth/spreadsheets,"
+    "https://www.googleapis.com/auth/userinfo.email,openid"
+)
 
 # zenkaku → hankaku 数字（「１回目」のような全角表記に備える）
 _Z2H = str.maketrans("０１２３４５６７８９", "0123456789")
