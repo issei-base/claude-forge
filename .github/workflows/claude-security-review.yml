@@ -3,6 +3,15 @@ name: Claude Security Review
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
+  workflow_call:
+    inputs:
+      gate:
+        description: "'all' = 全 PR をレビュー / それ以外 = 'claude-review' ラベル付き PR のみ"
+        type: string
+        default: 'label'
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -15,9 +24,9 @@ concurrency:
 
 jobs:
   security:
-    # Legacy fallback: `claude-review` ラベルが付いている PR でのみ起動。
-    # 標準の PR review は Codex GitHub code review / `@codex review` に寄せる。
-    if: contains(github.event.pull_request.labels.*.name, 'claude-review')
+    # 直接の pull_request 起動（claude-forge 自身）: `claude-review` ラベル付き PR のみ。
+    # workflow_call で他 repo から呼ばれた場合: 呼び出し側が gate: 'all' を渡せば全 PR で起動。
+    if: inputs.gate == 'all' || contains(github.event.pull_request.labels.*.name, 'claude-review')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

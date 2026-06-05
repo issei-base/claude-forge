@@ -20,7 +20,9 @@ allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remo
 - `gh auth status` — ログイン必須。未ログインなら `gh auth login` を案内して STOP。
 - `git rev-parse --is-inside-work-tree` — true でなければ STOP。
 - `git remote -v` — `origin` が github.com を指している必要あり。無ければユーザーに「`gh repo create` する？それとも中止？」と確認。
+- `git ls-remote --heads origin` — **出力が空 = リモートにブランチが1本も無い新規 repo**。この場合 PR のベースが存在しないので **ブートストラップが必要**（§1 参照）。`gh repo view --json defaultBranchRef` も空を返すため、後続の default 判定が誤作動する点に注意。
 - `git status --porcelain` または `git log @{u}..HEAD 2>/dev/null` — 未コミット変更 OR 未 push コミットのどちらかが存在しなければ「ship するものが無い」と伝えて STOP。
+- **巨大 import の検知**: 最後のコミット以降の変更が大きい（多数ファイル）場合、PR が「今回の主目的」だけでなく**過去の未コミット作業を全部含む**ことをユーザーに事前に伝え、スコープを確認する。
 
 ## 1. Branch (hard guard)
 
@@ -36,6 +38,11 @@ default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
 - **それ以外**: 現在のブランチをそのまま使う。
 - **既存ブランチを rename しない。**
 
+- **`default` が空（= 新規 repo でリモートにブランチが無い）の場合**: PR のベースが存在しないので **ブートストラップ**する。
+  1. 確定履歴（未コミット作業を含まない現在の HEAD）を base ブランチ（通常 `main`）として push する必要がある。**これは default branch への push なので必ずユーザーに明示確認**。さらに auto-mode / 権限分類器が `git push origin main` をブロックすることがある → その場合は**ユーザー自身に実行してもらう**（`! git push -u origin main`）。
+  2. base が出来たら以降は通常フロー（フィーチャーブランチ → commit → push → PR）。
+  - 名前が `main`/`master` のブランチに居る場合は、`default` が空でも **default 扱い**（このブランチで直接 commit/push しない）。
+
 この後どのステップでも、push 先が default branch でないことを `git rev-parse --abbrev-ref HEAD` で再確認すること。
 
 ## 2. Stage
@@ -43,6 +50,7 @@ default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
 - `git status --porcelain` で変更内容を確認。
 - 関連ファイルのみ **明示的なパス指定で** stage する。`git add -A` / `git add .` は **絶対禁止** (`.DS_Store`、ログ、IDE 設定ファイルなどを巻き込む)。
 - 未 stage のリストに次のいずれかが見えたら **STOP してユーザーに確認**: `.env*`, `*.pem`, `*.key`, `credentials*`, `id_rsa*`, その他 token / secret らしきもの。
+- **内容（値）スキャンも必須**（特に初回 push / 巨大 import 時）: stage 済み diff に実シークレット値が無いか確認する。`git diff --cached | grep -nIE 'GOCSPX-|sk-ant-|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.|xox[baprs]-|sb_secret_'` 等の高シグナルパターンを検出。1 つでも当たれば **STOP してユーザーに確認**。ファイル名が無害でも、docs / config / サンプルに値が貼られていることがある。
 - 無関係な変更が混在していたら、推測せずどれを含めるかユーザーに聞く。
 
 ## 3. Commit (未 push コミットのみで ship する場合はスキップ)
