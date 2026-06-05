@@ -38,9 +38,11 @@
 別ブロックや特殊な配置に書きたい時は、`read` の出力でセルを確認して
 `write --cell <A1>`（例 `--cell G15`）で明示する。
 
-## 認証（書き込み）
+## 認証（読み書きとも gws CLI 経由）
 
-- 読み: Sheets API GET（要 ADC スコープ）。※非公開シートでも編集権限アカウントなら読める。
-- 書き: Sheets API `values.update`（`valueInputOption=USER_ENTERED` → URL は自動リンク化）。
-- トークンは `gcloud auth application-default print-access-token`。スコープ不足/未認証は
-  スクリプトが復旧コマンド付きで停止する。一度きりのセットアップは SKILL.md「前提」参照。
+- 読み: `gws sheets spreadsheets values get`。※非公開シートでも編集権限アカウントなら読める。
+- 書き: `gws sheets spreadsheets values update`（`valueInputOption=USER_ENTERED` → URL は自動リンク化）。
+- メタ（gid→タブ名）: `gws sheets spreadsheets get`。
+- gws は独自の検証済み OAuth クライアントを使うので、gcloud 既定クライアントの spreadsheets
+  スコープ・ブロックを回避できる。未認証/失効はスクリプトが `gws auth login` を促して停止する。
+  一度きりのセットアップは SKILL.md「前提」参照。

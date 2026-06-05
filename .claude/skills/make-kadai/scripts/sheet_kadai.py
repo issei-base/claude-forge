@@ -11,9 +11,10 @@
   - 別の行の先頭セルが「次回までの宿題…」 → これが課題行。
   - 課題セル = (課題行, N回目レッスンの列)。受講生ごとに行がズレても、ラベルで引くので壊れない。
 
-認証: Google Sheets API を user OAuth で叩く。トークンは ADC から取る
-  (`gcloud auth application-default print-access-token`)。スコープが足りなければ
-  セットアップコマンドを出して止まる（破壊的操作の前で勝手に進めない）。
+認証: Google Sheets API は gws CLI 経由で叩く（gws は独自の検証済み OAuth
+  クライアントを使うので、gcloud 既定クライアントの spreadsheets スコープ
+  ブロックを回避できる）。未認証/失効なら `gws auth login` を促して止まる
+  （破壊的操作の前で勝手に進めない）。
 
 使い方:
   python3 sheet_kadai.py auth-check
@@ -27,18 +28,6 @@ import json
 import re
 import subprocess
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
-
-SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
-# gcloud ADC は cloud-platform スコープを必須とする（無いと login が弾かれる）。
-# spreadsheets はシート読み書き、userinfo.email/openid は承認アカウント確認用。
-SCOPES = (
-    "https://www.googleapis.com/auth/cloud-platform,"
-    "https://www.googleapis.com/auth/spreadsheets,"
-    "https://www.googleapis.com/auth/userinfo.email,openid"
-)
 
 # zenkaku → hankaku 数字（「１回目」のような全角表記に備える）
 _Z2H = str.maketrans("０１２３４５６７８９", "0123456789")
@@ -179,73 +168,90 @@ def resolve_target(values: list[list[str]], lesson: int | None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# ネットワーク層
+# ネットワーク層（gws CLI 経由）
+#
+# gws は独自の検証済み OAuth クライアントを使うので、gcloud 既定クライアントが
+# spreadsheets スコープを弾く問題（"このアプリはブロックされます" / scope blocked）
+# を回避できる。トークン管理・更新は gws に任せ、ここは sheets サブコマンドを叩く。
 # ---------------------------------------------------------------------------
 
-def get_access_token() -> str:
+GWS_LOGIN_HINT = (
+    "gws の認証が必要です（トークン失効 or 未認証）。一度だけ次を実行してください:\n\n"
+    "  gws auth login\n\n"
+    "（ブラウザが開くので受講生シートを編集できる Google アカウントで承認）\n"
+    "その後もう一度このスキルを実行。"
+)
+
+
+def _gws(args: list[str], params: dict | None = None, json_body: dict | None = None) -> dict:
+    """`gws sheets <args>` を叩いて JSON を返す。auth / API エラーは SkillError に変換。"""
+    cmd = ["gws", "sheets", *args, "--format", "json"]
+    if params is not None:
+        cmd += ["--params", json.dumps(params, ensure_ascii=False)]
+    if json_body is not None:
+        cmd += ["--json", json.dumps(json_body, ensure_ascii=False)]
     try:
-        out = subprocess.run(
-            ["gcloud", "auth", "application-default", "print-access-token"],
-            capture_output=True, text=True, timeout=30,
-        )
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     except FileNotFoundError:
-        raise SkillError("gcloud が見つかりません。Google Cloud SDK を入れてください。")
-    if out.returncode != 0 or not out.stdout.strip():
-        raise SkillError(_auth_setup_hint(out.stderr.strip()))
-    return out.stdout.strip()
+        raise SkillError("gws が見つかりません。Google Workspace CLI を入れてください。")
 
-
-def _auth_setup_hint(detail: str = "") -> str:
-    return (
-        "Sheets API 用の ADC トークンが取得できません。一度だけ次を実行してください:\n\n"
-        f"  gcloud auth application-default login --scopes={SCOPES}\n\n"
-        "（ブラウザが開くので受講生シートを編集できる Google アカウントで承認）\n"
-        "その後もう一度このスキルを実行。\n"
-        + (f"\n[gcloud stderr] {detail}" if detail else "")
-    )
-
-
-def _api(method: str, url: str, token: str, body: dict | None = None) -> dict:
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method)
-    req.add_header("Authorization", f"Bearer {token}")
-    if data is not None:
-        req.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode(errors="replace")
+    # 本文 JSON は stdout、"Using keyring backend" 等の雑音は stderr に出る想定。
+    data = None
+    if out.stdout.strip():
         try:
-            err = json.loads(raw)["error"]
-        except Exception:
-            raise SkillError(f"Sheets API {e.code}: {raw[:400]}")
-        reason = ""
-        for d in err.get("details", []):
-            if d.get("reason"):
-                reason = d["reason"]
-        if reason == "ACCESS_TOKEN_SCOPE_INSUFFICIENT":
-            raise SkillError(_auth_setup_hint("トークンに spreadsheets スコープがありません。"))
-        if reason in ("SERVICE_DISABLED", "PERMISSION_DENIED") and "sheets.googleapis.com" in raw:
-            raise SkillError(
-                "ADC の quota project で Sheets API が無効です。次で有効化:\n"
-                "  gcloud services enable sheets.googleapis.com\n"
-                f"\n[API] {err.get('message','')}"
-            )
-        if e.code == 403:
+            data = json.loads(out.stdout)
+        except json.JSONDecodeError:
+            data = None
+    if data is None:
+        blob = (out.stdout + "\n" + out.stderr).strip()
+        if any(s in blob for s in ("expired or revoked", "invalid_grant", "authError")):
+            raise SkillError(GWS_LOGIN_HINT + f"\n\n[gws] {blob[:300]}")
+        raise SkillError(f"gws 実行に失敗しました:\n{blob[:500]}")
+
+    if isinstance(data, dict) and "error" in data:
+        err = data["error"] if isinstance(data["error"], dict) else {"message": str(data["error"])}
+        msg, code = err.get("message", ""), err.get("code")
+        if code == 401 or any(s in msg for s in ("expired or revoked", "invalid_grant")):
+            raise SkillError(GWS_LOGIN_HINT + f"\n\n[gws] {msg[:300]}")
+        if code == 403:
             raise SkillError(
                 "このシートへの編集権限が無い可能性があります（403）。承認したアカウントが"
-                f"対象シートを編集できるか確認してください。\n[API] {err.get('message','')}"
+                f"対象シートを編集できるか確認してください。\n[gws] {msg}"
             )
-        if e.code == 404:
+        if code == 404:
             raise SkillError("スプレッドシートが見つかりません（404）。URL / 共有設定を確認してください。")
-        raise SkillError(f"Sheets API {e.code} ({reason}): {err.get('message','')}")
-    except urllib.error.URLError as e:
-        raise SkillError(f"Sheets API に接続できません: {e}")
+        raise SkillError(f"Sheets API エラー（{code}）: {msg}")
+    return data
 
 
-def resolve_gid_title(sid: str, gid: int | None, token: str) -> str:
-    meta = _api("GET", f"{SHEETS_API}/{sid}?fields=sheets.properties(sheetId,title)", token)
+def check_auth() -> dict:
+    """gws が oauth2 で認証済み＆トークンが生きているかを確認。ダメなら SkillError。
+
+    注意: `gws auth status` は `--format` 引数を取らない（付けると 400 エラー）。
+    プレーン出力が JSON なのでそのままパースする。access token が期限切れでも
+    refresh token が生きていれば実 API 呼び出し時に gws が更新するので ok 扱い。
+    refresh token 自体が revoked/expired のときだけ再ログインを促す。
+    """
+    try:
+        out = subprocess.run(["gws", "auth", "status"],
+                             capture_output=True, text=True, timeout=30)
+    except FileNotFoundError:
+        raise SkillError("gws が見つかりません。Google Workspace CLI を入れてください。")
+    try:
+        st = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        st = {}
+    if st.get("auth_method") != "oauth2" or not st.get("has_refresh_token"):
+        raise SkillError(GWS_LOGIN_HINT)
+    err = st.get("token_error") or ""
+    if not st.get("token_valid") and any(s in err for s in ("expired", "revoked", "invalid_grant")):
+        raise SkillError(GWS_LOGIN_HINT + (f"\n\n[gws] {err}" if err else ""))
+    return {"auth": "ok", "token_valid": bool(st.get("token_valid"))}
+
+
+def resolve_gid_title(sid: str, gid: int | None) -> str:
+    meta = _gws(["spreadsheets", "get"],
+                params={"spreadsheetId": sid, "fields": "sheets(properties(sheetId,title))"})
     sheets = [s["properties"] for s in meta.get("sheets", [])]
     if not sheets:
         raise SkillError("シート（タブ）が1つもありません。")
@@ -260,17 +266,18 @@ def resolve_gid_title(sid: str, gid: int | None, token: str) -> str:
     )
 
 
-def read_grid(sid: str, title: str, token: str) -> list[list[str]]:
-    rng = urllib.parse.quote(quote_title_for_a1(title), safe="")
-    data = _api("GET", f"{SHEETS_API}/{sid}/values/{rng}?majorDimension=ROWS", token)
+def read_grid(sid: str, title: str) -> list[list[str]]:
+    data = _gws(["spreadsheets", "values", "get"],
+                params={"spreadsheetId": sid, "range": quote_title_for_a1(title),
+                        "majorDimension": "ROWS"})
     return data.get("values", [])
 
 
-def write_cell(sid: str, title: str, a1: str, value: str, token: str) -> dict:
-    rng_a1 = f"{quote_title_for_a1(title)}!{a1}"
-    rng = urllib.parse.quote(rng_a1, safe="")
-    url = f"{SHEETS_API}/{sid}/values/{rng}?valueInputOption=USER_ENTERED"
-    return _api("PUT", url, token, {"range": rng_a1, "majorDimension": "ROWS", "values": [[value]]})
+def write_cell(sid: str, title: str, a1: str, value: str) -> dict:
+    rng = f"{quote_title_for_a1(title)}!{a1}"
+    return _gws(["spreadsheets", "values", "update"],
+                params={"spreadsheetId": sid, "range": rng, "valueInputOption": "USER_ENTERED"},
+                json_body={"values": [[value]]})
 
 
 # ---------------------------------------------------------------------------
@@ -278,17 +285,14 @@ def write_cell(sid: str, title: str, a1: str, value: str, token: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def cmd_auth_check(_args) -> int:
-    token = get_access_token()
-    # 軽い疎通確認（user info は openid スコープで引ける）
-    print(json.dumps({"auth": "ok", "token_len": len(token)}, ensure_ascii=False))
+    print(json.dumps(check_auth(), ensure_ascii=False))
     return 0
 
 
 def cmd_read(args) -> int:
     sid, gid = parse_sheet_url(args.url)
-    token = get_access_token()
-    title = resolve_gid_title(sid, gid, token)
-    values = read_grid(sid, title, token)
+    title = resolve_gid_title(sid, gid)
+    values = read_grid(sid, title)
     info = resolve_target(values, args.lesson)
     out = {
         "spreadsheet_id": sid,
@@ -309,9 +313,8 @@ def cmd_write(args) -> int:
         raise SkillError(f"書き込む内容が空です: {args.value_file}")
 
     sid, gid = parse_sheet_url(args.url)
-    token = get_access_token()
-    title = resolve_gid_title(sid, gid, token)
-    values = read_grid(sid, title, token)
+    title = resolve_gid_title(sid, gid)
+    values = read_grid(sid, title)
 
     if args.cell:
         cell = args.cell.upper()
@@ -334,7 +337,7 @@ def cmd_write(args) -> int:
             "上書きするなら --overwrite を付けてください。"
         )
 
-    write_cell(sid, title, cell, value, token)
+    write_cell(sid, title, cell, value)
     link = f"https://docs.google.com/spreadsheets/d/{sid}/edit"
     if gid is not None:
         link += f"#gid={gid}&range={cell}"
@@ -349,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="受講生カリキュラムシートの課題欄を read/write する")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("auth-check", help="ADC トークンが取れるか確認")
+    sub.add_parser("auth-check", help="gws が認証済みか確認")
 
     pr = sub.add_parser("read", help="課題行・対象セル・テンプレを JSON で返す")
     pr.add_argument("--url", required=True)
