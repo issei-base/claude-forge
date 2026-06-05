@@ -280,6 +280,15 @@ def write_cell(sid: str, title: str, a1: str, value: str) -> dict:
                 json_body={"values": [[value]]})
 
 
+def read_cell(sid: str, title: str, a1: str) -> str:
+    """単一セルの現在値を読む（書き込み後の読み戻し検証に使う）。"""
+    rng = f"{quote_title_for_a1(title)}!{a1}"
+    data = _gws(["spreadsheets", "values", "get"],
+                params={"spreadsheetId": sid, "range": rng, "majorDimension": "ROWS"})
+    vals = data.get("values", [])
+    return vals[0][0] if vals and vals[0] else ""
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -338,14 +347,18 @@ def cmd_write(args) -> int:
         )
 
     write_cell(sid, title, cell, value)
+    # 書きっぱなしにせず読み戻して検証する（改行潰れ・途中切れ・誤爆セルを検知）。
+    got = read_cell(sid, title, cell)
+    verified = got.strip() == value.strip()
     link = f"https://docs.google.com/spreadsheets/d/{sid}/edit"
     if gid is not None:
         link += f"#gid={gid}&range={cell}"
     print(json.dumps({
-        "written": True, "cell": cell, "lesson": lesson,
-        "chars": len(value), "overwrote": bool(existing.strip()), "link": link,
+        "written": True, "verified": verified, "cell": cell, "lesson": lesson,
+        "chars": len(value), "readback_chars": len(got),
+        "overwrote": bool(existing.strip()), "link": link,
     }, ensure_ascii=False, indent=2))
-    return 0
+    return 0 if verified else 2
 
 
 def main(argv: list[str] | None = None) -> int:
