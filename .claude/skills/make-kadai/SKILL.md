@@ -1,7 +1,7 @@
 ---
 name: make-kadai
 description: 受講生のカリキュラムシート（Google スプレッドシート）の URL とテーマ（例: ALB / S3 / CloudFront）を渡すと、既存の課題欄フォーマットを読み取り、同じ書式でそのテーマのハンズオン課題を生成して「次回までの宿題（課題欄）」の該当レッスン列に Sheets API で自動書き込みする。ユーザーが「受講生のシートの6回目の課題にALBのハンズオンを出して」「次回の宿題を作って書き込んで」「<スプレッドシートURL> の課題欄に <テーマ> の課題を入れて」「学習報告シートに課題を自動で書いて」などと、受講生シートの課題欄へ課題を作成・記入したい意図を示したときに発動する。AWS テーマの手順は記憶で書かず [[aws-docs]] / [[aws-advisor]] で一次ソースに当てる。図解の HTML 教材が欲しいだけでシートに書かないなら [[doc-illustrate]] を使う。単に AWS サービスの説明が欲しいだけ・シートを編集しないなら使わない。
-allowed-tools: Read, Write, Skill, Bash(python3:*), Bash(gcloud config get-value:*), Bash(gcloud auth application-default print-access-token:*)
+allowed-tools: Read, Write, Skill, Bash(python3:*), Bash(gws auth status:*), Bash(gws sheets:*)
 ---
 
 # make-kadai
@@ -21,19 +21,20 @@ allowed-tools: Read, Write, Skill, Bash(python3:*), Bash(gcloud config get-value
 - **空きセルにだけ書く**。既に課題が入っているセルは `--overwrite` を付けない限り書かない（スクリプトがガードする）。上書きが要るなら必ずユーザーに確認してから。
 - **AWS の手順は記憶で書かない**。コマンド・サービス名・上限・前提は [[aws-docs]] / [[aws-advisor]] skill で一次ソースに当ててから課題に落とす。
 - **書き込み前に、生成した課題文と対象セル（例: `G375`）をユーザーに見せて確認**してから `write` する。「自動書き込み」でも、何をどこに入れるかは一度見せる。
+- **書き込んだら必ず読み戻して問題が無いかレビューしてから報告する**（ステップ5）。書きっぱなしにしない。`verified: false` なら直す。
 - main の課題列構造を壊さない。書くのは1セルだけ。
 
 ## 前提（初回だけ・認証）
 
-Sheets API は user OAuth で叩く。トークンは ADC から取得する。**未認証なら `read`/`write` が止まり、セットアップコマンドを出す**ので、それをユーザーに実行してもらう:
+Sheets API は **`gws`（Google Workspace CLI）経由**で叩く。gws は独自の検証済み OAuth クライアントを使うので、gcloud 既定クライアントの `spreadsheets` スコープ・ブロック（"このアプリはブロックされます"）を回避できる。**未認証/失効なら `read`/`write` が止まり、再認証コマンドを出す**ので、それをユーザーに実行してもらう:
 
 ```sh
-gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/userinfo.email,openid
+gws auth login
 ```
 
-（ブラウザが開く → **対象シートを編集できる Google アカウント**で承認）。`cloud-platform` は ADC 必須スコープ（無いと login が弾かれる）。`python3 scripts/sheet_kadai.py auth-check` が `{"auth":"ok"}` を返せば準備完了。Sheets API が quota project で無効と言われたら `gcloud services enable sheets.googleapis.com`。
+（ブラウザが開く → **対象シートを編集できる Google アカウント**で承認）。`python3 scripts/sheet_kadai.py auth-check` が `{"auth":"ok"}` を返せば準備完了。
 
-> **将来の注意**: gcloud の既定クライアント ID は `spreadsheets` スコープを順次ブロック予定（login 時に WARNING が出る）。ブロックされたら独自 OAuth クライアント ID かサービスアカウント impersonation に切り替える（`--scopes` だけでは解決しない）。当面は上記で通る。
+> gws 未導入なら `npm install -g @googleworkspace/cli`。`gws auth status` が `auth_method: oauth2` で `sheets.googleapis.com` を含んでいれば OK。gcloud ADC は既定クライアントの scope ブロックで使えないことがあるため、この skill は gws を既定の経路にしている。
 
 ## ワークフロー
 
@@ -77,7 +78,18 @@ python3 scripts/sheet_kadai.py read --url "<URL>" [--lesson N]
 python3 scripts/sheet_kadai.py write --url "<URL>" --lesson N --value-file /tmp/kadai.txt
 ```
 - `--lesson N`（または `--cell A1`）でスクリプトが**書き込み直前にセルを再解決**し、空きガードを通してから `values.update`(USER_ENTERED) する。
-- 返る `link`（`…#gid=…&range=セル`）をユーザーに渡して、シート上で確認してもらう。
+
+### 5. 書き込み後に必ず確認・レビューする（必須）
+書きっぱなしにしない。書き込み後は**必ず**自分で読み戻して問題が無いか確かめてから報告する。
+
+1. **読み戻し検証（決定的）**: `write` の戻り値の `verified` を見る。スクリプトが書き込み後にそのセルを読み戻し、`verified: true`（書いた内容と一致）/ `readback_chars`（実際に入った文字数）を返す。`verified: false` や文字数が大きく違うなら、改行潰れ・途中切れ・別セルへの誤爆を疑い、原因を直して書き直す（必要なら `--overwrite`）。`verified` が無い古い経路なら `read`/`gws sheets +read` で当該セルを読み戻して目視照合する。
+2. **内容レビュー**: 読み戻した実セルに対して次を点検する。
+   - テンプレ構成が揃っているか（`ハンズオン課題：` / `【詳細な要件】` / `【具体的な手順と学習ポイント】` / 最後にクリーンアップ）。
+   - **無料枠・課金の注意とクリーンアップ手順**が入っているか（受講生の事故防止・最重要）。
+   - AWS 手順が [[aws-docs]] 裏取りどおりで、参考リンクが実在するか（捏造が残っていないか）。
+   - `filled_lessons` の既存課題と**主題が被っていない**か、直前レッスンから自然に積み上がっているか。
+   - 途中で切れていない・想定の文字数に収まっているか（セル文字数上限は約 50,000 文字）。
+3. **報告**: 上記レビュー結果（OK／要修正点）と `link`（`…#gid=…&range=セル`）を添えてユーザーに渡し、シート上でも確認してもらう。問題があれば握りつぶさず提示し、直す。
 
 ## 失敗時
 - スクリプトの `ERROR:` はそのまま復旧手順になっている（未認証→ログインコマンド / セル埋まり→`--overwrite` / 権限403→アカウント確認 / gid不一致→存在タブ一覧）。出力を握りつぶさずユーザーに見せる。
