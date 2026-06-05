@@ -22,7 +22,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。個人用上書きは `.claude/settings.local.json`（gitignore） |
 | `.github/workflows/` | `skill-lint.yml` (CI lint・label gate なし) + legacy Claude review workflows |
 | `LICENSE` | MIT (cp -R / fork を許可) |
-| `summaries/` | doc-illustrate の生成物 (`.gitignore` 済み・**追跡しない**) |
+| `summaries/` | doc-illustrate の旧出力先 (`.gitignore` 済み・**追跡しない**)。現在の既定出力は repo 外の `~/Downloads/` |
 
 ## 約束事
 
