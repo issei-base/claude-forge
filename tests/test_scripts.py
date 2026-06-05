@@ -62,12 +62,13 @@ class TestIgnoredDirs(unittest.TestCase):
     def test_underscore_and_retired(self):
         self.assertTrue(is_ignored_dir("_template"))
         self.assertTrue(is_ignored_dir(".scratch"))
-        self.assertTrue(is_ignored_dir("ohayou"))
-        self.assertTrue(is_ignored_dir("lesson-homework"))
         self.assertTrue(is_ignored_dir("x-buzz"))
 
     def test_real_skill_not_ignored(self):
         self.assertFalse(is_ignored_dir("ship"))
+        # ohayou は skills/ から tools/ohayou/ へ移設済み。skills/ 配下の名前としては
+        # もう例外扱いしない (誤って ohayou という skill を作ったら lint で気づける)。
+        self.assertFalse(is_ignored_dir("ohayou"))
 
 
 class TestVerifyTokens(unittest.TestCase):

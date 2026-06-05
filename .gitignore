@@ -5,20 +5,17 @@ node_modules/
 .env
 .env.*
 
-# 外部 OSS ツール (Claude Code Usage Dashboard) を同居させているが、
-# サードパーティのコード + 個人の利用データ (メール・全プロジェクトパス・トークン量を
-# 含む SQLite) を持つため、public repo には絶対に出さない。ローカル稼働のみ。
+# ローカル専用ツール置き場。public repo には絶対に出さない (ローカル稼働のみ):
+#   - 外部 OSS ツール (Claude Code Usage Dashboard): サードパーティのコード + 個人の
+#     利用データ (メール・全プロジェクトパス・トークン量を含む SQLite) を持つ。
+#   - ohayou (個人用の朝のレッスン LINE 通知): 旧「おはよう」skill は廃止し、いまは
+#     launchd cron 専用スクリプト (detect_lessons / line_notify / morning_lesson_notify)
+#     だけが残る。受講生名・パートナー名を含む。元 .claude/skills/ohayou/ から tools/ へ移設。
 tools/
 
-# ohayou (個人用の朝のレッスン LINE 通知) は受講生名・パートナー名を含むため public repo に出さない。
-# 旧「おはよう」skill は廃止し、いまは launchd cron 専用スクリプト
-# (detect_lessons / line_notify / morning_lesson_notify) だけが残る。ローカル専用。
-.claude/skills/ohayou/
-
 # 個人運用の skill。ローカルでは (symlink 経由で) 使うが、public repo には出さない。
-# `git rm --cached` で追跡だけ外し、ファイルはディスクに残す (ohayou と同じ扱い)。
+# `git rm --cached` で追跡だけ外し、ファイルはディスクに残す (tools/ohayou と同じ扱い)。
 .claude/skills/x-buzz/
-.claude/skills/lesson-homework/
 
 # doc-illustrate が生成する HTML 要約。claude-forge は public repo なので
 # 追跡しない（ローカル保管のみ）。出力先はプロジェクト直下 summaries/。
