@@ -36,21 +36,21 @@ def main():
     if not os.path.exists(lint):
         return 0  # claude-forge 以外 / lint 不在 → no-op
 
-    # skills/ ツリーが dirty な時だけ動く (git が無ければ保険で常に lint)。
-    # `-u` で untracked をファイル単位に展開する: これが無いと新規 skill dir が
-    # `?? .claude/skills/<name>/` (末尾スラッシュ) に collapse され、SKILL.md 名で
-    # マッチできず lint を取りこぼす — 一番踏みやすい「新規 skill 追加」が素通りする。
-    # マッチも SKILL.md 末尾でなく skills/ パス全体に緩め、安いので迷ったら走らせる。
+    # skills/ か tests/ が dirty な時だけ動く (git が無ければ保険で常に lint)。
+    # pathspec を `.claude/skills tests` に絞るので、出力が 1 行でもあれば対象変更あり
+    # = dirty。tests/ も含めるのは、lint ロジックや fixtures を tests/ 側だけ編集した
+    # ターンでもローカルゲートを効かせるため (CI と Codex hook は元々 tests/ も対象)。
+    # `-u` は新規 skill dir を `?? .claude/skills/<name>/` に collapse させずファイル
+    # 単位で確実に拾うため (一番踏みやすい「新規 skill 追加」の取りこぼし防止)。
     dirty = True
     try:
         st = subprocess.run(
-            ["git", "-C", project, "status", "--porcelain", "-u", "--", ".claude/skills"],
+            ["git", "-C", project, "status", "--porcelain", "-u", "--",
+             ".claude/skills", "tests"],
             capture_output=True, text=True, timeout=10,
         )
         if st.returncode == 0:
-            dirty = any(
-                ".claude/skills/" in line for line in st.stdout.splitlines()
-            )
+            dirty = bool(st.stdout.strip())
     except Exception:
         pass  # git 不在 → dirty=True のまま (lint は安いので空振りでも害なし)
 

@@ -27,7 +27,7 @@ claude-forge/
 ├── .github/workflows/          # skill-lint (CI lint) + legacy Claude review workflows
 ├── install.sh                  # 全 skill + agent を ~/.claude に symlink (global 運用)。--dry-run 可
 ├── data/                       # skill の実行時生成物 (各種ログ等)。gitignore 済み
-├── summaries/                  # doc-illustrate の生成 HTML。gitignore 済み・追跡しない
+├── summaries/                  # doc-illustrate の旧出力先 (現在の既定は repo 外の ~/Downloads/)。gitignore 済み・追跡しない
 ├── INTERESTS.md                # interest-profile の生成物。gitignore 済み・非公開
 ├── CLAUDE.md                   # この repo で作業する際の作法 (Claude / コントリビュータ向け)
 ├── LICENSE                     # MIT
@@ -106,7 +106,7 @@ ln -sfn ~/projects/claude-forge/.claude/agents/doc-reviewer.md ~/.claude/agents/
 
 - `.claude/settings.local.json` — 個人 / マシン固有の設定・ランタイム上書き先 (`*.local.*` は `.gitignore` 済み)。公開する `.claude/settings.json` には skill 共通の最小限だけ入れる
 - secrets を含むもの全て (API key、token など) と、個人 MCP の vault/絶対パス
-- doc-illustrate が生成する HTML (`summaries/`)、interest-profile の生成物 (`INTERESTS.md` / `data/interests/`) — いずれも `.gitignore` 済み
+- doc-illustrate が生成する HTML (既定の出力先は repo 外の `~/Downloads/`。旧出力先 `summaries/` は `.gitignore` 済み)、interest-profile の生成物 (`INTERESTS.md` / `data/interests/`) — いずれも追跡しない
 
 ## Skill と Agent の使い分け
 
@@ -139,8 +139,8 @@ description で自動発火 (model-invoked)。明示的に呼びたい時は `/s
 | `aws-advisor` | 「AWS で X したい」「best practice for <service>」「Well-Architected 的に」 | Well-Architected docs に基づくアーキテクチャ助言 (推奨 + tradeoffs) |
 | `doc-illustrate` | 「このページ図解にして」「`<URL>` をわかりやすく」「受講生用に HTML にして」 | AWS / Claude(Anthropic) の公式ページを手描き風の図解 HTML に要約。取得は要約モデルを挟まない生テキスト優先 (`curl` / docs は `.md`)、数値・価格は逐語引用。出力は `summaries/` (gitignore 済み) |
 | `make-kadai` | 「受講生のシートの6回目の課題に ALB 出して」「`<URL>` の課題欄に `<テーマ>` の課題を書き込んで」「次回の宿題作って」 | 受講生カリキュラムシートの「次回までの宿題（課題欄）」へ、テーマ指定のハンズオン課題を生成し **Sheets API で自動書き込み**。セル特定 (`N回目`/`次回までの宿題` ラベル検出) と read/write は `scripts/sheet_kadai.py` が決定的に担当、課題文は直近課題をテンプレに踏襲して生成。AWS 手順は `aws-docs`/`aws-advisor` で裏取り。読み書きは `gws` CLI 経由 (独自 OAuth クライアントで gcloud 既定クライアントの scope ブロックを回避・`gws auth login` の一度きり認証)、空きセルのみ・上書きはガード。受講生 URL は repo/memory に保存しない |
-| `interest-profile` | 「プロファイル更新」「興味プロファイル sync」「興味を見せて」 | 会話履歴から興味プロファイルを `INTERESTS.md` に蓄積・更新。生成物 (`INTERESTS.md` / `data/interests/`) は会話抜粋を含むため **gitignore 済み・非公開**。[nyanta012/cc-personalize](https://github.com/nyanta012/cc-personalize) を元に改変 |
-| `cc-article` | 「この記事 claude-forge に活かせる?」「`<URL>` 要約して採用できるか見て」「この Zenn/Qiita 読んで」 | Claude Code 関連記事 (Zenn / Qiita / ブログ / 英語) の URL を生テキストで読み込み、**わかりやすい要約 + claude-forge への採用診断**の 2 本立てでチャットに返す。各テクを ✅採用候補 / 🤔条件付き / ❌見送り で判定し、落とし所 (skill / 設定 / hook / agent・既存との重複) と次アクションまで提示。取得は `doc-illustrate` の `extract.py` 流用 (要約モデルを挟まない)、CC の挙動主張は公式で裏取り。**実装はせず**判断と提案まで (やるなら `skill-creator` / `update-config` / `ship` へ)。自動発火は best-effort (「要約して」系は Claude が自前で済ませがち・発火 eval で確認済み)、確実に使うなら `/cc-article <URL>` |
+| `interest-profile` | 「プロファイル更新」「興味プロファイル sync」「興味を見せて」 | 会話履歴から興味プロファイルを `INTERESTS.md` に蓄積・更新し、**圧縮した興味サマリを `~/.claude/CLAUDE.md`（グローバル memory）の管理ブロックに橋渡し**して全プロジェクトで自動ロードさせる（生抜粋は入れない）。詳細版の生成物 (`INTERESTS.md` / `data/interests/`) は会話抜粋を含むため **gitignore 済み・非公開**。[nyanta012/cc-personalize](https://github.com/nyanta012/cc-personalize) を元に改変 |
+| `cc-article` | 「この記事 claude-forge に活かせる?」「`<URL>` をうちのリポジトリに採用できるか見て」「この Zenn/Qiita うちに取り込める?」 | Claude Code 関連記事 (Zenn / Qiita / ブログ / 英語) の URL を生テキストで読み込み、**その手法を claude-forge に採用できるか診断**してチャットに返す (各テクを ✅採用候補 / 🤔条件付き / ❌見送り で判定 + 落とし所〔skill / 設定 / hook / agent・既存との重複〕+ 次アクション)。**要約は診断の材料として添えるだけ**。取得は `doc-illustrate` の `extract.py` 流用 (要約モデルを挟まない)、CC の挙動主張は公式で裏取り。**実装はせず**判断と提案まで (やるなら `skill-creator` / `update-config` / `ship` へ)。単に要約だけなら発動しない (素の Claude で足りる)、確実に使うなら `/cc-article <URL>` |
 
 ### Issue → 計画 → 実装 → PR ワークフロー
 

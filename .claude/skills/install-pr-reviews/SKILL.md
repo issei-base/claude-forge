@@ -1,6 +1,7 @@
 ---
 name: install-pr-reviews
 description: 現在の cwd の GitHub リポジトリで Codex GitHub code review を有効化するための設定確認と案内を行う。ユーザーが「この repo にも PR レビュー入れて」「自動レビューを有効化して」「Codex review を入れて」「セキュリティチェックも入れて」など、PR レビュー運用を整えたい意図を示したときに発動する。legacy の Claude workflow コピーは、明示的に求められた場合だけ扱う。
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git rev-parse:*), Bash(git remote:*), Bash(gh auth status:*), Bash(gh repo view:*)
 ---
 
 # install-pr-reviews

@@ -15,8 +15,6 @@
       "Bash(codex review:*)",
       "Bash(codex exec:*)",
       "Bash(gws sheets:*)",
-      "Bash(gws docs:*)",
-      "Bash(gws drive:*)",
       "Bash(gws auth status:*)"
     ]
   },
