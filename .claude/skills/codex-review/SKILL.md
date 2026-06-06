@@ -1,6 +1,7 @@
 ---
 name: codex-review
 description: OpenAI Codex CLI を使って、現在の git 差分にセカンドオピニオンのコードレビューをかける。ユーザーが「codex にレビューしてもらって」「セカンドオピニオン」「他のモデルにも見せて」「ship する前にチェックして」「codex review」「second opinion」など、別モデルによる独立レビューを求める意図を示したときに発動する。PR を出す前や、大きめの refactor 後に特に有効。単に「これレビューして」だけなら通常の Claude レビューで対応し、この skill は発動しない。
+allowed-tools: Read, Bash(which:*), Bash(codex review:*), Bash(git rev-parse:*), Bash(git status:*), Bash(gh repo view:*)
 ---
 
 # codex-review
