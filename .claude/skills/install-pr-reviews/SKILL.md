@@ -1,6 +1,6 @@
 ---
 name: install-pr-reviews
-description: 現在の cwd の GitHub リポジトリで Codex GitHub code review を有効化するための設定確認と案内を行う。ユーザーが「この repo にも PR レビュー入れて」「自動レビューを有効化して」「Codex review を入れて」「セキュリティチェックも入れて」など、PR レビュー運用を整えたい意図を示したときに発動する。legacy の Claude workflow コピーは、明示的に求められた場合だけ扱う。
+description: 現在の cwd の GitHub リポジトリで Codex GitHub code review を有効化するための設定確認と案内を行う。ユーザーが「この repo にも PR レビュー入れて」「自動レビューを有効化して」「Codex review を入れて」「セキュリティチェックも入れて」など、PR レビュー運用を整えたい意図を示したときに発動する。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git rev-parse:*), Bash(git remote:*), Bash(gh auth status:*), Bash(gh repo view:*)
 ---
 
@@ -58,16 +58,9 @@ one-off review は PR コメントで `@codex review`。
 
 - Codex automatic reviews が有効なら、PR 作成後の追加操作は不要。
 - automatic reviews が未設定/不明で one-off review が欲しい場合、PR 作成後に `gh pr comment <PR URL> --body "@codex review"` を使う。
-- `claude-review` ラベルは legacy Claude workflows 用。新規 repo では標準で作らない / 付けない。
-
-### 5. Legacy Claude workflows
-
-ユーザーが明示的に「Claude workflow をコピーして」と言った場合だけ、旧運用として `claude-review.yml` / `claude-security-review.yml` のコピー、`claude-review` ラベル、Claude Code GitHub App、`CLAUDE_CODE_OAUTH_TOKEN` または `ANTHROPIC_API_KEY` secret の案内を行う。
-
-既存ファイルがある場合は **絶対に上書きしない**。diff を見せてユーザー判断。
+- Codex review に専用ラベルは不要。旧 Claude workflow 用の `claude-review` ラベルも新規には作らない / 付けない。
 
 ## 注意
 
 - Codex GitHub review の repository-wide enable は Codex settings 側の操作であり、この repo のファイル編集だけでは完了しない。
 - secret の値は絶対に出力ログに出さない。
-- legacy Claude workflow は互換用。標準運用へ新規導入しない。
