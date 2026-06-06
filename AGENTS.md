@@ -21,6 +21,8 @@ Codex code review should focus on high-signal issues:
 
 Keep review comments specific and actionable. Avoid speculative best-practice comments unless the risk is concrete.
 
+Write all review comments, summaries, and explanations in Japanese (日本語). Keep code identifiers, file paths, commands, and quoted code in their original form (do not translate them).
+
 ## Automation Boundary
 
 - Codex is review-only for PR operations in this repository.
