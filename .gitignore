@@ -13,10 +13,6 @@ node_modules/
 #     だけが残る。受講生名・パートナー名を含む。元 .claude/skills/ohayou/ から tools/ へ移設。
 tools/
 
-# 個人運用の skill。ローカルでは (symlink 経由で) 使うが、public repo には出さない。
-# `git rm --cached` で追跡だけ外し、ファイルはディスクに残す (tools/ohayou と同じ扱い)。
-.claude/skills/x-buzz/
-
 # doc-illustrate が生成する HTML 要約。claude-forge は public repo なので
 # 追跡しない（ローカル保管のみ）。出力先はプロジェクト直下 summaries/。
 summaries/
