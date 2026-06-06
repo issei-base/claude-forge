@@ -172,7 +172,7 @@ skill は `SKILL.md` の `name` がディレクトリ名と一致していない
 
 | ツール | 何をするか | いつ走るか |
 |---|---|---|
-| `tests/lint_skills.py` | SKILL.md を持つ全 skill の構造を**決定的に**検証（`name`↔dir 一致 / `description` 必須 / 名前重複なし / SKILL.md 欠落ディレクトリ検出 / `triggers.json` に fixture があるか）。ネット・依存なし・一瞬。`_` 始まり (`_template`) と SKILL.md 無しの retired dir (`ohayou`) は対象外 | `python3 tests/lint_skills.py` を手動、または下の hook が自動実行 |
+| `tests/lint_skills.py` | SKILL.md を持つ全 skill の構造を**決定的に**検証（`name`↔dir 一致 / `description` 必須 / 名前重複なし / SKILL.md 欠落ディレクトリ検出 / `triggers.json` に fixture があるか）。ネット・依存なし・一瞬。`_` 始まり (`_template`) と gitignore 済みのローカル専用 skill は対象外 | `python3 tests/lint_skills.py` を手動、または下の hook が自動実行 |
 | `.claude/hooks/skill-lint.py` | **Stop hook**。SKILL.md を編集した（git で dirty な）ターンの終了時に上の lint を走らせ、ERROR があれば `exit 2` でターンを止める | 自動（claude-forge を開いて作業中のみ）。一時的に黙らせたい時は環境変数 `SKILL_LINT_HOOK=0` |
 | `.github/workflows/skill-lint.yml` | **CI lint**。同じ `lint_skills.py` を PR / main push で走らせる多層防御（Stop hook はローカル限定なので、web 編集や hook 無しマシン経由の破損もここで止まる）。label gate なし・トークン消費ゼロ | `.claude/skills/**` か `tests/**` を触る PR で自動 |
 | `tests/eval_triggers.py` | `description` が意図どおり**発火**するかを `claude -p` に採点させる近似テスト（`triggers.json` の代表クエリ→期待 skill）。非決定的・トークン消費 | `description` を大きく変えた時に `python3 tests/eval_triggers.py`（`--dry-run` で無料確認） |

@@ -20,11 +20,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
-# Dirs under skills/ that are intentionally local-only / retired and must not be
-# linted as public skills. They are gitignored and may be present locally without
-# a SKILL.md; dirs starting with `_` or `.` are scaffolds/scratch (e.g.
-# `_template`). See find_orphan_dirs() for how these are skipped.
-IGNORED_SKILL_DIRS = {"ohayou", "lesson-homework", "x-buzz"}
+# Named dirs under skills/ that are intentionally local-only and must not be
+# linted as public skills (gitignored, may be present locally without a SKILL.md).
+# Dirs starting with `_` or `.` are scaffolds/scratch (e.g. `_template`) and are
+# handled separately in is_ignored_dir(). Currently empty: the former personal
+# skills all moved out of .claude/skills/ — ohayou → tools/ohayou/, x-buzz →
+# ~/.x-buzz-auto/, lesson-homework → the public make-kadai skill. Re-add a name
+# here if a gitignored personal skill is ever placed back under skills/.
+IGNORED_SKILL_DIRS = set()
 
 _KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):\s?(.*)$")
 _BLOCK_INDICATORS = {">", ">-", ">+", "|", "|-", "|+"}
@@ -111,8 +114,8 @@ def parse_frontmatter(text: str) -> dict:
 def load_skills() -> list[dict]:
     """Return one record per local skill: dir, name, description, path.
 
-    Scaffold/retired dirs (see is_ignored_dir) are skipped so a `_template`
-    SKILL.md or the SKILL.md-less `ohayou` dir never counts as a real skill.
+    Scaffold/local-only dirs (see is_ignored_dir) are skipped so a `_template`
+    SKILL.md or a gitignored personal skill never counts as a public skill.
     """
     skills = []
     for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):

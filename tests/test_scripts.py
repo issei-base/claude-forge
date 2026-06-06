@@ -59,15 +59,17 @@ class TestFrontmatter(unittest.TestCase):
 
 
 class TestIgnoredDirs(unittest.TestCase):
-    def test_underscore_and_retired(self):
+    def test_underscore_and_dot_scaffolds(self):
         self.assertTrue(is_ignored_dir("_template"))
         self.assertTrue(is_ignored_dir(".scratch"))
-        self.assertTrue(is_ignored_dir("ohayou"))
-        self.assertTrue(is_ignored_dir("lesson-homework"))
-        self.assertTrue(is_ignored_dir("x-buzz"))
 
     def test_real_skill_not_ignored(self):
         self.assertFalse(is_ignored_dir("ship"))
+        # 旧・個人 skill は skills/ の外へ移設済み (ohayou→tools/ohayou/,
+        # x-buzz→~/.x-buzz-auto/, lesson-homework→make-kadai)。skills/ 配下の名前
+        # としてはもう例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
+        self.assertFalse(is_ignored_dir("ohayou"))
+        self.assertFalse(is_ignored_dir("x-buzz"))
 
 
 class TestVerifyTokens(unittest.TestCase):
