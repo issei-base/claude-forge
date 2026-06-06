@@ -56,8 +56,8 @@ default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
 ## 3. Commit (未 push コミットのみで ship する場合はスキップ)
 
 **staged diff から** メッセージを生成:
-- **Subject**: 72 文字以内、命令形 ("Add X" であって "Added X" / "Adds X" ではない)、末尾ピリオド無し。
-- **Body**: 任意。差分から自明でない *why* を 1〜3 文。trivial な変更ならスキップ。
+- **Subject**: **日本語**で簡潔に (50 字程度・体言止め or 「〜する」。例:「死参照を修正」「PR 規約を共有ドキュメントに集約」)。**英語にしない** (claude-forge 方針)。末尾の句点無し。
+- **Body**: 任意。差分から自明でない *why* を**日本語**で 1〜3 文。trivial な変更ならスキップ。
 - commit 前に **必ずメッセージをユーザーに見せて** 編集の機会を与える。
 - HEREDOC で commit (フォーマット保持):
   ```sh
@@ -91,7 +91,7 @@ fi
 - このブランチの **全コミット** からコンテキストを集める:
   - `git log <base>..HEAD --pretty=format:'%s%n%n%b'`
   - `git diff <base>...HEAD --stat`
-- **Title**: 70 文字以内。最新/主要 commit subject に揃えることが多い。複数 commit なら umbrella な要約を。
+- **Title**: **日本語**で 70 文字以内 (英語にしない)。最新/主要 commit subject に揃えることが多い。複数 commit なら umbrella な要約を。
 - **Body** はこの構造:
   ```
   ## Summary

@@ -39,6 +39,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), 
 ## 🚫 絶対に守るルール（claude-forge 共通方針）
 
 - **main / master / default branch に直接 push してはいけない。例外なし。** push する前に必ずカレントブランチが default でないことを確認する。
+- **コミットメッセージと PR タイトルは日本語で書く。** 英語にしない (claude-forge 方針)。
 - **`gh pr merge` を実行しない。** merge は人間が手動で行う。
 - **Co-Authored-By を付与しない。**
 - `git add .` / `git add -A` を使わない。**変更ファイルを明示パス指定で stage** する。
