@@ -44,6 +44,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | PR レビュー | Codex | Codex automatic reviews / PR コメントの `@codex review` |
 | merge 判断 | 人間 | GitHub UI で内容を見て手動 merge |
 
+- **コミットメッセージと PR タイトルは日本語で書く** (`ship` / `create-pr` / `fix-pr` 共通・手動コミットも)。英語の subject / title にしない。コミット本文の bullet も日本語。
 - PR 作成は Claude Code に一本化する。変更を出す時は Claude の `ship` skill (「ship して」) または `create-pr` workflow を使い、feature branch → commit/push → `gh pr create` まで進める。
 - PR レビューは **Codex GitHub code review** を標準にする。repository-wide automatic reviews は Codex settings で有効化し、未設定/不明なら PR 作成後に `@codex review` をコメントして one-off review を依頼する。
 - Codex は PR 作成をしない。Codex 側の `.agents/skills/ship` は review-only 方針を返す stub。

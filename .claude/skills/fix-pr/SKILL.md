@@ -43,7 +43,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, Bash(git:*), Bash(gh pr vie
 Phase 3が完了するまでファイル編集を一切行わないこと。
 カレントディレクトリのままbranchをcheckoutして編集すると、進行中の他作業を破壊する可能性がある。
 
-**force pushしない / `gh pr merge` しない / Co-Authored-By を付けない** — claude-forge 共通方針。
+**force pushしない / `gh pr merge` しない / Co-Authored-By を付けない / コミットメッセージと PR タイトルは日本語で書く** — claude-forge 共通方針。
 
 ## Phase 1: PR情報取得
 
@@ -211,7 +211,7 @@ git push origin <headRefName>
 - 変更したファイルのみ `git add` する（`git add .` / `-A` は使わない）
 - 不要ファイル（.env、credentials等）を含めない
 - Co-Authored-Byは付与しない
-- コミットメッセージはリポジトリの規約に従う。なければ `feat: / fix: / refactor: / chore:` プレフィックスを使う
+- コミットメッセージは**日本語**で書く（リポジトリ規約があれば優先）。なければ `feat: / fix: / refactor: / chore:` プレフィックス + 日本語の説明
 
 **force pushはユーザの明示指示がない限り行わない。** rebase等で必要になった場合はユーザに確認する。
 
