@@ -12,7 +12,9 @@ python3 exists" constraint as the rest of the harness.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -30,6 +32,7 @@ def _load(path: Path, name: str):
 SKILLS = REPO_ROOT / ".claude" / "skills"
 vfy = _load(SKILLS / "doc-illustrate" / "scripts" / "verify.py", "verify")
 skd = _load(SKILLS / "make-kadai" / "scripts" / "sheet_kadai.py", "sheet_kadai")
+slint = _load(REPO_ROOT / ".claude" / "hooks" / "skill-lint.py", "skill_lint")
 
 
 class TestFrontmatter(unittest.TestCase):
@@ -136,6 +139,70 @@ class TestSheetKadai(unittest.TestCase):
     def test_resolve_no_kadai_row(self):
         with self.assertRaises(skd.SkillError):
             skd.resolve_target([["a", "1回目レッスン"]], None)  # 課題行なし
+
+
+class TestSymlinkDrift(unittest.TestCase):
+    """skill-lint.py の global symlink drift 検知 (取りこぼし防止ゲート)。"""
+
+    def _make_repo(self, base, names, scaffolds=()):
+        skills = os.path.join(base, "repo", ".claude", "skills")
+        os.makedirs(skills)
+        for n in names:
+            os.makedirs(os.path.join(skills, n))
+            Path(skills, n, "SKILL.md").write_text(f"---\nname: {n}\n---\n")
+        for s in scaffolds:  # _template 等: SKILL.md があっても authored に数えない
+            os.makedirs(os.path.join(skills, s))
+            Path(skills, s, "SKILL.md").write_text("---\nname: x\n---\n")
+        home = os.path.join(base, "home", ".claude", "skills")
+        os.makedirs(home)
+        return skills, home
+
+    def _link(self, skills, home, name):
+        os.symlink(os.path.join(skills, name), os.path.join(home, name))
+
+    def test_authored_skips_scaffolds_and_orphans(self):
+        with tempfile.TemporaryDirectory() as base:
+            skills, _ = self._make_repo(base, ["a", "b"], scaffolds=["_template"])
+            os.makedirs(os.path.join(skills, "noskill"))  # SKILL.md 無し = skill でない
+            self.assertEqual(slint._authored_skills(skills), ["a", "b"])
+
+    def test_gate_off_when_not_globally_installed(self):
+        # 1 つも symlink されていない = global install 運用に乗っていない → 誤検知しない。
+        with tempfile.TemporaryDirectory() as base:
+            skills, home = self._make_repo(base, ["a", "b", "c"])
+            missing, linked = slint.symlink_drift(skills, home)
+            self.assertEqual(linked, [])
+            self.assertEqual(missing, ["a", "b", "c"])  # linked 空なので呼び出し側は無視
+
+    def test_partial_install_flags_missing(self):
+        # a,b はリンク済・c だけ未リンク = 今回の make-kadai と同じ状況 → c を検出。
+        with tempfile.TemporaryDirectory() as base:
+            skills, home = self._make_repo(base, ["a", "b", "c"])
+            self._link(skills, home, "a")
+            self._link(skills, home, "b")
+            missing, linked = slint.symlink_drift(skills, home)
+            self.assertEqual(linked, ["a", "b"])
+            self.assertEqual(missing, ["c"])
+
+    def test_all_linked_no_drift(self):
+        with tempfile.TemporaryDirectory() as base:
+            skills, home = self._make_repo(base, ["a", "b"])
+            self._link(skills, home, "a")
+            self._link(skills, home, "b")
+            missing, linked = slint.symlink_drift(skills, home)
+            self.assertEqual(missing, [])
+            self.assertEqual(linked, ["a", "b"])
+
+    def test_link_pointing_elsewhere_is_not_counted(self):
+        # 同名だが別 repo を指す link は「この repo にリンク済」と見なさない。
+        with tempfile.TemporaryDirectory() as base:
+            skills, home = self._make_repo(base, ["a"])
+            other = os.path.join(base, "other")
+            os.makedirs(other)
+            os.symlink(other, os.path.join(home, "a"))
+            missing, linked = slint.symlink_drift(skills, home)
+            self.assertEqual(linked, [])
+            self.assertEqual(missing, ["a"])
 
 
 if __name__ == "__main__":
