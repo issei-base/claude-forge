@@ -20,7 +20,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
 | `install.sh` | 全 skill + agent を `~/.claude/` に symlink (global 運用)。`_`/SKILL.md 無しの dir はスキップ。`--dry-run` 可 |
 | `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。個人用上書きは `.claude/settings.local.json`（gitignore） |
-| `.github/workflows/` | `skill-lint.yml` (CI lint・label gate なし) + legacy Claude review workflows |
+| `.github/workflows/` | `skill-lint.yml` (CI lint・label gate なし) のみ。PR レビューは Codex GitHub code review に一本化（review 用 workflow は持たない） |
 | `LICENSE` | MIT (cp -R / fork を許可) |
 | `summaries/` | doc-illustrate の旧出力先 (`.gitignore` 済み・**追跡しない**)。現在の既定出力は repo 外の `~/Downloads/` |
 
@@ -48,7 +48,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 - PR 作成は Claude Code に一本化する。変更を出す時は Claude の `ship` skill (「ship して」) または `create-pr` workflow を使い、feature branch → commit/push → `gh pr create` まで進める。
 - PR レビューは **Codex GitHub code review** を標準にする。repository-wide automatic reviews は Codex settings で有効化し、未設定/不明なら PR 作成後に `@codex review` をコメントして one-off review を依頼する。
 - Codex は PR 作成をしない。Codex 側の `.agents/skills/ship` は review-only 方針を返す stub。
-- `claude-review` ラベル + Claude GitHub Actions workflows は legacy fallback。意図して古い運用を続ける repo 以外では新規付与しない。
+- legacy の Claude GitHub Actions review workflows（`claude-review.yml` / `claude-security-review.yml`・`claude-review` ラベル）は撤去済み。PR レビューは Codex に一本化する（旧 Claude workflow を使う repo はその repo 側で自前管理する）。
 - **main への直接 push は禁止** (ship skill の hard guard)。**merge は人間が手動**で行う (workflow も ship も merge しない)。
 - Branch Protection はこの repo では off (理由は README 参照)。
 
