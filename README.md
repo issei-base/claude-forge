@@ -133,7 +133,7 @@ description で自動発火 (model-invoked)。明示的に呼びたい時は `/s
 | Skill | 発動するフレーズ | 中身 |
 |---|---|---|
 | `ship` | 「ship して」「PR出して」「PR作って」 | branch → commit → push → `gh pr create`。**main / default branch への直接 push は絶対禁止** の hard guard 付き |
-| `codex-review` | 「codex にレビュー」「セカンドオピニオン」「他のモデルにも見せて」 | 現在の差分を Codex CLI に渡し、出力を逐語的にユーザーに見せる |
+| `codex-review` | 「codex にレビュー」「セカンドオピニオン」「他のモデルにも見せて」「adversarial レビュー」「厳しめに穴を探して」 | 現在の差分を Codex CLI に渡し、出力を逐語的にユーザーに見せる。通常レビューに加え、設計判断・セキュリティ・エッジケースを敵対的に突く **adversarial モード**（公式プラグイン `codex-plugin-cc` の `/codex:adversarial-review` 相当をプラグイン無しで再現）を持つ |
 | `install-pr-reviews` | 「この repo にも PR レビュー入れて」「Codex review 入れて」 | 現在 cwd の GitHub repo で Codex GitHub code review を有効化するための設定確認と案内。`AGENTS.md` の Review Guidelines を整え、automatic reviews / `@codex review` 運用へ寄せる。legacy Claude workflow コピーは明示要求時だけ |
 | `aws-docs` | 「AWS の docs」「公式ドキュメントだと」「Lambda の上限って」 | `aws` MCP server で公式 docs を引いて一次ソースから回答 |
 | `aws-advisor` | 「AWS で X したい」「best practice for <service>」「Well-Architected 的に」 | Well-Architected docs に基づくアーキテクチャ助言 (推奨 + tradeoffs) |

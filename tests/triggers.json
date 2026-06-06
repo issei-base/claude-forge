@@ -25,6 +25,8 @@
     { "query": "/create-pr でこの変更を PR にして", "expect": "create-pr" },
     { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
     { "query": "このドキュメント、1人でざっと軽くレビューだけして", "expect": "NONE" },
-    { "query": "この Zenn 記事をざっと要約して: https://zenn.dev/foo/articles/bar", "expect": "NONE" }
+    { "query": "この Zenn 記事をざっと要約して: https://zenn.dev/foo/articles/bar", "expect": "NONE" },
+    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-review" },
+    { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" }
   ]
 }
