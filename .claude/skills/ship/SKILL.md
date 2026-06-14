@@ -1,7 +1,7 @@
 ---
 name: ship
 description: 現在の作業を GitHub Pull Request にまで持っていく。必要ならフィーチャーブランチを切り、差分からコミットメッセージと PR タイトル/本文を生成し、push して `gh pr create` で PR を開く。ユーザーが「ship して」「PR出して」「PR作って」「送って」「プルリク」「ship it」「open a PR」「make a PR」「let's ship this」など、現在の変更を PR にしたい意図を示したときに発動する。
-allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remote:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh repo view:*), Bash(gh repo create:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*)
+allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remote:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh repo view:*), Bash(gh repo create:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh api:*)
 ---
 
 # ship
@@ -58,7 +58,9 @@ default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
 **staged diff から** メッセージを生成:
 - **Subject**: **日本語**で簡潔に (50 字程度・体言止め or 「〜する」。例:「死参照を修正」「PR 規約を共有ドキュメントに集約」)。**英語にしない** (claude-forge 方針)。末尾の句点無し。
 - **Body**: 任意。差分から自明でない *why* を**日本語**で 1〜3 文。trivial な変更ならスキップ。
-- commit 前に **必ずメッセージをユーザーに見せて** 編集の機会を与える。
+- **ユーザーに見せて編集機会を与えるかは変更の性質で決める** (日本語 subject 等の規約は決定的なので毎回は聞かない):
+  - **trivial / 単一ファイル / 自明な変更** (typo 修正・1 ファイルの小修正・意図が diff から自明) → メッセージを生成してそのまま commit (自走)。
+  - **非自明・複数論点が混ざる commit** (複数ファイルにまたがる・狙いが diff から読み取りにくい・要約に複数の話題が同居する) → commit 前にメッセージを見せて編集機会を与える。
 - HEREDOC で commit (フォーマット保持):
   ```sh
   git commit -m "$(cat <<'EOF'
@@ -69,6 +71,17 @@ default=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
   )"
   ```
 - pre-commit hook が失敗したら: 根本原因を fix → 再 stage → **新しい commit** を作成。`--amend` や `--no-verify` は使わない。
+
+## 3.5 セルフレビュー (push/PR の前に自分で diff を批判的に読み直す)
+
+push / PR は **外向きの publish**。その前に、これから出す diff と PR 本文ドラフトを自分で読み直して粗を取る。**ここは安全領域なので完全自律でよい** (ユーザーに確認を挟まず自走する)。`_shared/pr-conventions.md §2` を流用し、次を確認する:
+
+- **(a) secret 再確認**: `git diff <base>...HEAD` に実シークレット値が残っていないか (§2 の検出パターンを再走させてよい)。当たれば §2 の secret ルールに従い **STOP してユーザーに確認** (これは自走しない)。
+- **(b) 無関係な変更の混入**: 今回の主目的と無関係な diff (別件の修正・デバッグ用の一時変更・整形だけの広域差分) が混ざっていないか。
+- **(c) PR 本文が diff の繰り返しになっていないか**: `pr-conventions.md §1`「原則含めないもの」+ diff の逐一解説が PR 本文に入り込んでいないか。
+- **(d) Summary が意図を語れているか**: PR 本文 Summary が「何が変わって何のため」を 1〜3 行で語れているか (diff を読まないと分からない説明になっていないか)。
+
+**有限の自己検証ループ (最大 2 パス)**: (b)(c)(d) の粗が見つかったら、その場で直して (混入を unstage / 本文を推敲) もう一度読み直す。**混入が消えるまで最大 2 パス自走**し、2 パスで収束しなければ残りの懸念を §6 報告に添える。(a) の secret hit だけは自走せず即 STOP。
 
 ## 4. Push (default branch への push は absolute STOP)
 
@@ -113,11 +126,12 @@ fi
   )"
   ```
 - このブランチに既に PR がある (`gh pr view` で取得できる) なら **重複作成しない**。URL を見せて title/body を更新するか確認。
-- PR レビューは Codex GitHub code review を標準にする。repository-wide automatic reviews が有効なら追加操作は不要。
-- automatic reviews が有効か不明で、ユーザーが one-off review も望む場合のみ、PR 作成後に次を実行する:
-  ```sh
-  gh pr comment <PR URL> --body "@codex review"
-  ```
+- PR レビューは Codex GitHub code review を標準にする。**automatic review が有効かを 1 回判定し、未設定なら自分で one-off review を依頼するところまで自走してよい**:
+  - まず automatic review の有無を判定する (例: `gh api repos/{owner}/{repo}/installation` や Codex の review コメント有無で確認)。判定できれば追加操作は不要。
+  - **判定できない / 未設定なら**、PR 作成後に自分で次を打つ:
+    ```sh
+    gh pr comment <PR URL> --body "@codex review"
+    ```
 - legacy の `claude-review` ラベルは、その repo が意図して Claude GitHub Actions workflows を使い続けている場合だけ付ける。新規 repo へは標準では付けない。
 
 ## 6. 報告
