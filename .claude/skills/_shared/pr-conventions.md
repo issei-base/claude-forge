@@ -80,6 +80,8 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
      --jq '.[] | select(.user.login|test("codex";"i")) | "\(.path):\(.line // .original_line)\n\(.body)"'
    ```
 
+   > **新規判定（収束の要）**: 対象は**最新 push したコミットへの review だけ**。Codex は review ごとに「Reviewed commit: `<sha>`」入りの summary を 1 つ出す。GitHub は前ラウンドの outdated 行コメントの `commit_id` を最新コミットへ張り替えるので、**`commit_id` だけで「新しい指摘」と判断しない**。summary の `Reviewed commit` が現行 head sha か、各コメントの `created_at` が今サイクルの `@codex review` 再依頼より後か、で新規だけを拾う。これを怠ると**対応済みの指摘を再処理して永遠に収束しない**。
+
 2. **評価＋分類** — 各指摘がまず妥当かを評価し（記憶でなく diff と安全契約に照らす）、次の 2 種に分ける。
 
    | 種別 | 対応 |
