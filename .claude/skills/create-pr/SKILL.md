@@ -2,7 +2,7 @@
 name: create-pr
 description: "変更をコミットして GitHub PR を作成する自動化エンジン。ブランチ作成→ステージング→コミット→push→PR 作成→CI 自動修正ループまでをユーザ確認なしで一括実行する。以下の場合に使用: (1) 「/create-pr」と明示的に呼ばれた場合 (2) implement-issue / fix-pr など他スキルから PR 作成を委譲された場合。コミットメッセージを確認しながらインタラクティブに PR を出したい場合は ship スキルを使う。単にコミットだけ・push だけしたい場合は使わない。"
 argument-hint: "[branch] [commit-message]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git stash:*), Bash(git pull:*), Bash(git checkout:*), Bash(git rev-parse:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh repo view:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh pr checks:*), Bash(gh run list:*), Bash(gh run view:*), Bash(sleep:*), Bash(timeout:*), Bash(terraform fmt:*), Bash(terraform validate:*), Bash(terraform plan:*), Bash(prettier:*), Bash(npx prettier:*), Bash(eslint:*), Bash(npx eslint:*), Bash(ruff:*), Bash(golangci-lint:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git stash:*), Bash(git pull:*), Bash(git checkout:*), Bash(git rev-parse:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh repo view:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh pr checks:*), Bash(gh api:*), Bash(gh run list:*), Bash(gh run view:*), Bash(sleep:*), Bash(timeout:*), Bash(terraform fmt:*), Bash(terraform validate:*), Bash(terraform plan:*), Bash(prettier:*), Bash(npx prettier:*), Bash(eslint:*), Bash(npx eslint:*), Bash(ruff:*), Bash(golangci-lint:*)
 ---
 
 # Create PR
