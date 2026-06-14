@@ -36,6 +36,10 @@
     { "query": "この古い HTTP クライアントライブラリで HTTP/2 の要件を満たせるか、小さく試して採用可否を判断したい", "expect": "spike" },
     { "query": "この講義動画 lecture.mp4 の要点をタイムスタンプ付きで整理して", "expect": "gemini-multimodal" },
     { "query": "この長い README のテキストをかいつまんで日本語で要約して", "expect": "NONE" },
-    { "query": "この PDF 仕様書を受講生向けにわかりやすい図解 HTML 教材にして", "expect": "doc-illustrate" }
+    { "query": "この PDF 仕様書を受講生向けにわかりやすい図解 HTML 教材にして", "expect": "doc-illustrate" },
+
+    { "query": "このissueに着手して: https://github.com/acme/app/issues/55", "expect": "implement-issue" },
+    { "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて", "expect": "implement-issue" },
+    { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" }
   ]
 }
