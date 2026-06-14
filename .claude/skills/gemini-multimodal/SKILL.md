@@ -35,9 +35,10 @@ Gemini CLI は **認証方法で課金が変わる**。守るべきは 2 点:
     ```
   - 出典 (公式・要点): [Gemini CLI authentication](https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/authentication.mdx) —「有料サブスクなら API キーは不要、外せばアカウントのサブスク枠で直接認証する」。
 
-### 3. ファイルの存在
+### 3. ファイルの存在と場所
 
-- 渡されたパスのファイルが実在すること (絶対パスを使う)。無ければユーザーに確認。
+- 渡されたパスのファイルが実在すること。無ければユーザーに確認。
+- **gemini を実行する cwd のツリー内にあること。** gemini は workspace (実行ディレクトリ) 外のファイルを弾く (下記「実行」参照)。cwd 外なら workspace 内に `cp` してから渡す。
 
 ## 対応拡張子
 
@@ -50,23 +51,28 @@ Gemini CLI は **認証方法で課金が変わる**。守るべきは 2 点:
 
 ## 実行
 
-`@<絶対パス>` でファイルを添付し、タスクに合わせてプロンプトを書く。stderr も捕捉する (`2>&1`)。
+**重要 — gemini はファイルアクセスを実行ディレクトリ (workspace) 配下に制限する。** cwd のツリー外 (例: `/tmp/...`) を `@` で渡すと `Path not in workspace` で弾かれる (gemini 0.46.0 で確認)。なので **対象ファイルのあるディレクトリ (またはその祖先) で gemini を実行**し、その中のパスで `@` 参照する。stderr も捕捉する (`2>&1`)。
 
 ```sh
+# 対象ファイルのあるディレクトリへ移動してから実行する
+cd "$(dirname /abs/path/to/audio.mp3)"
+
 # 音声 → 文字起こし + 要約
-gemini -p "Transcribe and summarize @/abs/path/audio.mp3" 2>&1
+gemini -p "Transcribe and summarize @audio.mp3" 2>&1
 
 # 動画 → 要点 + タイムスタンプ
-gemini -p "Summarize key concepts with timestamps @/abs/path/video.mp4" 2>&1
+gemini -p "Summarize key concepts with timestamps @video.mp4" 2>&1
 
 # PDF → 仕様抽出
-gemini -p "Extract the API specs as a table @/abs/path/spec.pdf" 2>&1
+gemini -p "Extract the API specs as a table @spec.pdf" 2>&1
 
 # 画像 → 解析
-gemini -p "Describe what this screenshot shows and any visible errors @/abs/path/shot.png" 2>&1
+gemini -p "Describe what this screenshot shows and any visible errors @shot.png" 2>&1
 ```
 
-重い入力 (長い動画・大量バッチ) は時間がかかるのでタイムアウトを長めに取る。
+- workspace 外のファイルを解析したいときは、まず workspace 内 (cwd のツリー) に `cp` してから渡す。
+- 先頭に出る `Warning: 256-color...` / `Ripgrep is not available` は無害なノイズ。`2>&1` で拾った上で報告からは省いてよい。
+- 重い入力 (長い動画・大量バッチ) は時間がかかるのでタイムアウトを長めに取る。
 
 ## 報告
 
