@@ -16,6 +16,26 @@
       "Bash(codex exec:*)",
       "Bash(gws sheets:*)",
       "Bash(gws auth status:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.netrc)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/credentials)",
+      "Read(**/credentials.*)",
+      "Read(**/*.pem)"
     ]
   },
   "hooks": {
