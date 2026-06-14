@@ -49,7 +49,7 @@ Tier の定義と具体的な対象パス・根拠は `references/safe-targets.m
   - アプリキャッシュ（**非起動のもののみ**）: `rm -rf ~/Library/Caches/<bundle-id>/*`
   - npm: `npm cache clean --force`
   - Homebrew: `brew cleanup -s`
-  - 更新残骸: `rm -rf ~/Library/Caches/*.ShipIt/*`（held ログがあれば `: > <log>` で truncate）
+  - 更新残骸（**Phase 2 で確定した非起動アプリの `*.ShipIt` を 1 個ずつ逐語で**。`*.ShipIt` の glob 一括はしない＝未スキャン/起動中アプリの分まで消さないため）: `rm -rf ~/Library/Caches/com.microsoft.VSCode.ShipIt/*`（held ログがあれば `rm` ではなく `: > <log>` で truncate）
   - 古いシミュレータ: `xcrun simctl delete unavailable`
 - 大量削除（DerivedData / DeviceSupport など）は時間がかかる → `run_in_background` で実行し、完了を待ってから次へ。
 - 完了後に `df` を再測定し、**Before / After + 回収容量**を表で報告する。
