@@ -8,6 +8,8 @@ allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remo
 
 「変更を PR まで持っていく」end-to-end ワークフロー。各ステップに STOP 条件あり。違反したら自動回復せず必ずユーザーに見せる。
 
+> **PR 系 skill の使い分け:** この `ship` は新規 PR を**対話的に**（自分で確認しながら）出す skill。新規 PR を**自動・委譲で**作るなら [`create-pr`](../create-pr/SKILL.md)（CI 自動修正ループ付きエンジン）、**既存 PR**（PR URL）を直すなら [`fix-pr`](../fix-pr/SKILL.md)。
+
 ## 🚫 絶対に守るルール
 
 - **main / master / default branch に直接 push してはいけない。** 例外なし。

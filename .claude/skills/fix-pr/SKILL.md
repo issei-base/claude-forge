@@ -10,6 +10,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, Bash(git:*), Bash(gh pr vie
 既存PRに対して、worktree上でコード修正を行い、PR本文と関連Issueコメントを最新状態に同期させるスキル。
 **全フェーズを自動実行し、ユーザ介入なしで完走する。途中で承認待ちをしない。**
 
+> **PR 系 skill の使い分け:** この `fix-pr` は**既存 PR**（PR URL）を worktree で直す専用。**新規 PR** を作るなら、対話的には [`ship`](../ship/SKILL.md) / 自動・委譲では [`create-pr`](../create-pr/SKILL.md) を使う。
+
 ## Usage
 
 ```

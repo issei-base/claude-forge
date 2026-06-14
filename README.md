@@ -149,6 +149,15 @@ description で自動発火 (model-invoked)。明示的に呼びたい時は `/s
 
 Issue 管理から実装・PR まで一気通貫で繋げるための一連のスキル。カレント/`~/projects/` 配下のローカルリポジトリ・`gh`・`Agent` tool ベースで動く。コードレビューは `doc-impl-reviewer` agent、計画/ドキュメントの多観点レビューは `doc-review` skill (中核は `doc-reviewer` agent に委譲) が担当する。
 
+> **PR を作る 3 skill の使い分け**（迷ったらここ）:
+>
+> | | 新規 PR を作る | 既存 PR を直す |
+> |---|---|---|
+> | **対話的**（自分で見ながら） | `ship` | — |
+> | **自動・非対話**（止まらず完走） | `create-pr` | `fix-pr` |
+>
+> 軸は「**新規 / 既存**」×「**対話 / 自動**」の 2 つだけ。`ship`=人が確認しながら新規 PR を出す（CI ループ無し）、`create-pr`=主に `implement-issue` 等から**委譲される自動エンジン**（CI 自動修正ループ付き・非対話）、`fix-pr`=**PR URL** を受け取り worktree で既存 PR を直す（PR 本文・Issue コメントも同期）。
+
 | Skill | 発動するフレーズ | 中身 |
 |---|---|---|
 | `create-issue` | 「Issue作って」「タスク登録して」「この Issue リライトして」 | カレント (or 指定) リポジトリの GitHub Issue を新規作成 / リライト。Issue 本文は**概要だけ**に絞る (実装詳細は `plan-issue` 側へ)。投稿前に冗長セクション混入をセルフチェック |
