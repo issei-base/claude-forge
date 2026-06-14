@@ -1,7 +1,7 @@
 ---
 name: storage-cleanup
 description: "Mac のローカルストレージを最適化する。再生成されるキャッシュ・ビルド成果物・アプリ更新の残骸を **調査 → 安全確認 → 削除** の 3 フェーズで段階的に片付け、回収容量を報告する skill。「ストレージを最適化して」「ディスクの空きを増やして」「不要なリソース / キャッシュを調査して削除して」「容量食ってるもの調べて消して」「定期的にストレージ掃除して」「disk cleanup」「free up disk space」などで発動。調査だけ・削除だけでもフェーズで止められる。起動中アプリのキャッシュは skip、追記中ログは truncate、実データ (Tier 3) には触れない安全設計。**AWS / S3 等クラウドストレージのコスト最適化は [[aws-advisor]]**（この skill はローカルディスク専用）。単に 1 ファイルを消すだけの単純作業には使わない。"
-allowed-tools: Read, Bash(df:*), Bash(du:*), Bash(ls:*), Bash(pgrep:*), Bash(xcrun simctl list:*), Bash(brew cleanup:*), Bash(npm cache clean:*)
+allowed-tools: Read, Bash(bash:*), Bash(df:*), Bash(du:*), Bash(ls:*), Bash(pgrep:*), Bash(xcrun simctl list:*), Bash(brew cleanup:*), Bash(npm cache clean:*)
 ---
 
 # storage-cleanup
