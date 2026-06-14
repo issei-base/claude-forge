@@ -73,9 +73,12 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 
    ```bash
    # 到着待ち: 最新 head への Codex review summary が出るまで（最大 ~5 分）
+   # 注意: 過去ラウンドの古い review も "Reviewed commit" を含むので、必ず現行 head sha で判定する
+   #   （でないと既存 review がある PR / 2 周目で即 break し、今回依頼分の到着前に進んで空振りする）。
+   head=$(git rev-parse --short HEAD)
    for _ in $(seq 1 10); do
      gh pr view <PR URL> --json reviews \
-       --jq '.reviews[]|select(.author.login|test("codex";"i"))|.body' | grep -q "Reviewed commit" && break
+       --jq '.reviews[]|select(.author.login|test("codex";"i"))|.body' | grep -q "$head" && break
      sleep 30
    done
    # レビュー要約（review body）
@@ -101,7 +104,7 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
    同意できない指摘は **dispute** として PR にコメントで根拠を述べ、コードは直さない（黙って無視しない）。inline 行コメントを拾い損ねると主要指摘を 0 件扱いして早期終了するので、必ず `pulls/.../comments` も取得する。
 
 3. **修正** — 自動修正可と判断したものだけ working tree を修正する。
-4. **commit + push** — 変更ファイルのみ `git add` し、コミット・push（Co-Authored-By は付けない・force push しない）。
+4. **commit + push + CI 再確認** — 変更ファイルのみ `git add` し、コミット・push（Co-Authored-By は付けない・force push しない）。**push 後は最新 head の CI を待つ**（`gh pr checks <PR URL> --watch` 等）。Codex 修正が lint/test を壊していれば §3 の CI ループで直してから次へ。完了報告の CI 結果は**この最新 head のもの**にする（修正前の古い PASS を流用しない）。
 5. **再依頼** — `@codex review` を再度コメントして次サイクルの review を依頼する。
 
    ```bash
