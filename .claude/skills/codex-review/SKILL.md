@@ -1,7 +1,7 @@
 ---
 name: codex-review
 description: OpenAI Codex CLI を使って、現在の git 差分にセカンドオピニオンのコードレビューをかける。ユーザーが「codex にレビューしてもらって」「セカンドオピニオン」「他のモデルにも見せて」「ship する前にチェックして」「codex review」「second opinion」など、別モデルによる独立レビューを求める意図を示したときに発動する。「codex に adversarial レビュー」「codex で厳しめに穴を探して」「セカンドオピニオンを批判的に」など、**別モデルによる独立レビューの意図と併せて**設計判断・セキュリティ・エッジケースを敵対的に突くことを求めたときは adversarial モードで実行する。PR を出す前や、大きめの refactor 後に特に有効。単に「これレビューして」「厳しめに見て」「批判的にレビュー」だけ（Codex を明示しない）なら通常の Claude レビューで対応し、この skill は発動しない。
-allowed-tools: Read, Bash(which:*), Bash(codex review:*), Bash(git rev-parse:*), Bash(git status:*), Bash(gh repo view:*)
+allowed-tools: Read, Edit, Write, Bash(which:*), Bash(codex review:*), Bash(git rev-parse:*), Bash(git status:*), Bash(gh repo view:*)
 ---
 
 # codex-review

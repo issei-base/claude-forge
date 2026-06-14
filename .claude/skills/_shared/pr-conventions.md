@@ -72,8 +72,12 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 1. **取得** — Codex のレビューコメントを取得する。
 
    ```bash
-   gh pr view <PR URL> --json reviews,comments \
-     --jq '[.reviews[], .comments[]] | map(select(.author.login | test("codex"; "i"))) | .[] | {body, state}'
+   # レビュー要約（review body）
+   gh pr view <PR URL> --json reviews \
+     --jq '.reviews[] | select(.author.login|test("codex";"i")) | .body'
+   # inline review comments（行コメント。Codex の主要な指摘はここに付く・review 要約とは別 endpoint）
+   gh api repos/{owner}/{repo}/pulls/{number}/comments \
+     --jq '.[] | select(.user.login|test("codex";"i")) | "\(.path):\(.line // .original_line)\n\(.body)"'
    ```
 
 2. **評価＋分類** — 各指摘がまず妥当かを評価し（記憶でなく diff と安全契約に照らす）、次の 2 種に分ける。
@@ -83,7 +87,7 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
    | 自動修正可（lint / typo / 明白なバグ / 安全契約との不整合） | working tree を修正する |
    | 要人間判断（設計・仕様・トレードオフ） | 自動で触らない。要約してユーザーに引き継ぐ |
 
-   同意できない指摘は **dispute** として PR にコメントで根拠を述べ、コードは直さない（黙って無視しない）。
+   同意できない指摘は **dispute** として PR にコメントで根拠を述べ、コードは直さない（黙って無視しない）。inline 行コメントを拾い損ねると主要指摘を 0 件扱いして早期終了するので、必ず `pulls/.../comments` も取得する。
 
 3. **修正** — 自動修正可と判断したものだけ working tree を修正する。
 4. **commit + push** — 変更ファイルのみ `git add` し、コミット・push（Co-Authored-By は付けない・force push しない）。
