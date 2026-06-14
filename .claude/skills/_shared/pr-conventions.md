@@ -76,7 +76,10 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
    gh pr view <PR URL> --json reviews \
      --jq '.reviews[] | select(.author.login|test("codex";"i")) | .body'
    # inline review comments（行コメント。Codex の主要な指摘はここに付く・review 要約とは別 endpoint）
-   gh api repos/{owner}/{repo}/pulls/{number}/comments \
+   # 注意: gh api が自動展開する placeholder は {owner}/{repo}/{branch} のみ。{number} は展開されない
+   #   ので PR 番号は実値に解決してから渡す（そのままだと 404 で行コメントを取りこぼす）。
+   PR=$(gh pr view <PR URL> --json number -q .number)
+   gh api "repos/{owner}/{repo}/pulls/$PR/comments" \
      --jq '.[] | select(.user.login|test("codex";"i")) | "\(.path):\(.line // .original_line)\n\(.body)"'
    ```
 
