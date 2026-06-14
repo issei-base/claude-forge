@@ -69,9 +69,15 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 
 ### 手順（1 サイクル）
 
-1. **取得** — Codex のレビューコメントを取得する。
+1. **取得（到着を待ってから）** — `@codex review` / automatic review は**非同期**。Step 6.5 / Phase 8.5 到達時点ではまだコメントが無いことがあるので、**最新 head コミットへの review summary か新規 inline コメントが現れるまで短く polling（30 秒間隔・最大 ~5 分）してから**取得する。timeout で何も現れなければ「今サイクルはレビューなし」としてループを抜ける（待たずに毎回 skip すると、CI が無い/速い PR でループが初回から空振りする）。
 
    ```bash
+   # 到着待ち: 最新 head への Codex review summary が出るまで（最大 ~5 分）
+   for _ in $(seq 1 10); do
+     gh pr view <PR URL> --json reviews \
+       --jq '.reviews[]|select(.author.login|test("codex";"i"))|.body' | grep -q "Reviewed commit" && break
+     sleep 30
+   done
    # レビュー要約（review body）
    gh pr view <PR URL> --json reviews \
      --jq '.reviews[] | select(.author.login|test("codex";"i")) | .body'
