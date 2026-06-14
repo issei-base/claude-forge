@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), 
 変更のコミットから GitHub PR 作成までを一括で行う自動化エンジン。
 **全ステップを自動で実行し、ユーザに確認を求めず PR URL を返す。**
 
-> **ship との使い分け:** 対話的に (コミットメッセージを見せて承認してもらいながら) PR を出すなら `ship`。本スキルは「止まらずに PR まで作る + CI 失敗を自動修正する」エンジンで、主に implement-issue / fix-pr から委譲される。
+> **PR 系 skill の使い分け:** 本スキルは「止まらずに新規 PR まで作る + CI 失敗を自動修正する」**自動エンジン**で、主に implement-issue / fix-pr から委譲される。対話的に (コミットメッセージを見せて承認してもらいながら) 新規 PR を出すなら [`ship`](../ship/SKILL.md)、**既存 PR**（PR URL）を直すなら [`fix-pr`](../fix-pr/SKILL.md)。
 
 ## Usage
 

@@ -44,6 +44,17 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | PR レビュー | Codex | Codex automatic reviews / PR コメントの `@codex review` |
 | merge 判断 | 人間 | GitHub UI で内容を見て手動 merge |
 
+PR を作る/直す skill は 3 つ。**「新規 / 既存」×「対話 / 自動」の 2 軸**で使い分ける（重複ではなく別セル）:
+
+| | 新規 PR を作る | 既存 PR を直す |
+|---|---|---|
+| **対話的**（自分で見ながら） | `ship` | — |
+| **自動・非対話**（止まらず完走） | `create-pr` | `fix-pr` |
+
+- `ship` — 人が確認しながら新規 PR を出す（自然言語「ship して/PR出して」で発火・CI 自動修正ループ無し）。
+- `create-pr` — 主に `implement-issue` / `fix-pr` から**委譲される自動エンジン**（非対話・CI 自動修正ループ付き）。人間が直接 PR を出すなら `ship` を使う。
+- `fix-pr` — **PR URL** を受け取り worktree で既存 PR を直す（コード修正 + PR 本文 + Issue コメントを同期）。新規 PR 作成には使わない。
+
 - **コミットメッセージと PR タイトルは日本語で書く** (`ship` / `create-pr` / `fix-pr` 共通・手動コミットも)。英語の subject / title にしない。コミット本文の bullet も日本語。
 - PR 作成は Claude Code に一本化する。変更を出す時は Claude の `ship` skill (「ship して」) または `create-pr` workflow を使い、feature branch → commit/push → `gh pr create` まで進める。
 - PR レビューは **Codex GitHub code review** を標準にする。repository-wide automatic reviews は Codex settings で有効化し、未設定/不明なら PR 作成後に `@codex review` をコメントして one-off review を依頼する。
