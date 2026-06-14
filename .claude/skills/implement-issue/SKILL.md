@@ -168,6 +168,12 @@ git branch --show-current  # 作業ブランチであることを確認
 
 **以降のPhase 5〜8はすべてworktreeディレクトリ内で実行する。**
 
+### 4.5 着手したら board の Status を In Progress に
+
+対象 Issue がリンク済み GitHub Project(board) の **Status フィールド**を持つなら、**着手時に Status を `In Progress` にする**（完了時は Phase 9 で `Done`）。`project` スコープが必要。
+- projectV2 GraphQL: `addProjectV2ItemById`（board 未追加なら追加して item id 取得・既にあれば既存 item）→ `updateProjectV2ItemFieldValue` で Status を `In Progress` の option id に更新。
+- リンク済み board が無い／`project` スコープが無い repo では**このステップを飛ばし、その旨を Phase 9 の完了報告に明記**する。
+
 ## Phase 5: 実装計画策定・提示
 
 以下を整理しユーザに提示する。**ただし承認待ちで停止せず、そのままPhase 6に進む。**
@@ -254,6 +260,10 @@ EOF
 ```
 
 ## Phase 9: クリーンアップ・完了報告
+
+### board の Status を Done に
+
+§4.5 でリンク済み board の Status を更新した場合、**PR 作成後にこの Issue の Status を `Done` にする**（実装が一通り終わった＝merge は人間が別途行う）。board が無い／`project` スコープが無いときは skip し、完了報告にその旨を書く。
 
 ### worktreeのクリーンアップ
 

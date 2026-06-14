@@ -169,11 +169,10 @@ non-fast-forward で reject された場合は **STOP**。`--force` / `--force-w
 
 ### 5-5: PR作成実行
 
-PR は **draft** で作成する（人間が内容を確認してから ready/merge する claude-forge の方針に合わせる）。
+PR は **ready（非 draft）** で作成する。**Codex GitHub automatic review は ready の PR のみを対象にし、draft はスキップする**ため、draft で作ると自動レビューが走らない。レビューは自動で付くが、**merge は人間が手動**で行う（claude-forge 方針＝レビュー結果を読んで人間が merge）。
 
 ```bash
 gh pr create \
-  --draft \
   --base <デフォルトブランチ> \
   --assignee @me \
   --title "<PRタイトル>" \
@@ -183,7 +182,7 @@ EOF
 )"
 ```
 
-Codex GitHub automatic reviews が有効なら追加操作は不要。未設定/不明で one-off review も必要な文脈なら、作成後に:
+Codex GitHub automatic reviews が有効なら、ready で作成した時点で自動レビューが走るので追加操作は不要。automatic が未設定/不明な repo で one-off review も必要な文脈なら、作成後に:
 
 ```bash
 gh pr comment <PR URL> --body "@codex review"
@@ -251,11 +250,11 @@ push 後 Step 6-2 に戻る。
 
 ## Step 6.5: Codex 応答ループ
 
-draft PR 作成済み・CI ループ通過後、Codex GitHub review の指摘へ自律対応する。
+PR 作成済み（ready）・CI ループ通過後、Codex GitHub review の指摘へ自律対応する。
 **手順・分類・収束/停止・禁止事項は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 に従う**（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
 - Codex のレビューコメントを取得 → 各指摘を「自動修正可 / 要人間判断」に分類 → 自動修正可のみ working tree を直し commit + push → `@codex review` を再依頼。
 - 停止: 新規 critical/blocking が 0 / **最大 2 サイクル**（CI の 3 より少なく）/ 残りが要人間判断のみ。残った要人間判断は要約して Step 7 でユーザーに引き継ぐ。
-- **禁止**: 指摘を黙らせるためのテスト書き換え・握りつぶし。**ループは ready 昇格も merge もしない（draft のまま）**。force push しない。同意できない指摘は dispute としてコメントし、直さない。
+- **禁止**: 指摘を黙らせるためのテスト書き換え・握りつぶし。**ループは merge しない**（PR は ready だが merge は人間が判断）。force push しない。同意できない指摘は dispute としてコメントし、直さない。
 
 Codex review が無効 / コメントが付かない repo ならこの Step をスキップして Step 7 へ。
 
