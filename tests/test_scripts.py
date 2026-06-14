@@ -68,11 +68,14 @@ class TestIgnoredDirs(unittest.TestCase):
 
     def test_real_skill_not_ignored(self):
         self.assertFalse(is_ignored_dir("ship"))
-        # 旧・個人 skill は skills/ の外へ移設済み (ohayou→tools/ohayou/,
-        # x-buzz→~/.x-buzz-auto/, lesson-homework→make-kadai)。skills/ 配下の名前
-        # としてはもう例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
+        # ohayou は skills/ の外 (tools/ohayou/) へ移設済みなので、skills/ 配下の
+        # 名前としては例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
         self.assertFalse(is_ignored_dir("ohayou"))
-        self.assertFalse(is_ignored_dir("x-buzz"))
+
+    def test_local_only_personal_skill_ignored(self):
+        # x-buzz は個人用 (X 自動投稿) でローカルのみ・gitignore 済み。public repo に
+        # 出さないため IGNORED_SKILL_DIRS に登録 = lint 対象外 (triggers fixture 不要)。
+        self.assertTrue(is_ignored_dir("x-buzz"))
 
 
 class TestVerifyTokens(unittest.TestCase):

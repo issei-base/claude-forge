@@ -23,11 +23,15 @@ SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 # Named dirs under skills/ that are intentionally local-only and must not be
 # linted as public skills (gitignored, may be present locally without a SKILL.md).
 # Dirs starting with `_` or `.` are scaffolds/scratch (e.g. `_template`) and are
-# handled separately in is_ignored_dir(). Currently empty: the former personal
-# skills all moved out of .claude/skills/ — ohayou → tools/ohayou/, x-buzz →
-# ~/.x-buzz-auto/, lesson-homework → the public make-kadai skill. Re-add a name
-# here if a gitignored personal skill is ever placed back under skills/.
-IGNORED_SKILL_DIRS = set()
+# handled separately in is_ignored_dir().
+#   - x-buzz : personal X/Twitter auto-posting skill. Lives locally under
+#     .claude/skills/x-buzz/ (gitignored) and posts to a personal account, so it
+#     must never be committed to this public repo. (NOTE: its older revision is
+#     already in git history — commits 2c21b8f..edaf7ab — but contains no secrets,
+#     only skill logic.) Re-listed here per the convention below.
+# Re-add a name here if a gitignored personal skill is ever placed back under
+# skills/ (otherwise the lint demands a public triggers fixture for it).
+IGNORED_SKILL_DIRS = {"x-buzz"}
 
 _KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):\s?(.*)$")
 _BLOCK_INDICATORS = {">", ">-", ">+", "|", "|-", "|+"}
