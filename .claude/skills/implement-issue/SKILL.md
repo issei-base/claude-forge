@@ -168,9 +168,10 @@ git branch --show-current  # 作業ブランチであることを確認
 
 **以降のPhase 5〜8はすべてworktreeディレクトリ内で実行する。**
 
-### 4.5 着手したら In Progress に（ラベル＋board）
+### 4.5 着手したら In Progress に（アサイン＋ラベル＋board）
 
 着手時に対象 Issue を「進行中」にする:
+- **アサイン**: 自分をアサインする（`gh issue edit <番号> --repo <owner/repo> --add-assignee @me`。既に自分がアサイン済みなら no-op）。
 - **ラベル**: `in progress` ラベルを付与（`gh issue edit <番号> --repo <owner/repo> --add-label "in progress"`。ラベルが無ければ作成する）。
 - **board**（リンク済み Project に Status フィールドがある場合）: Status を `In Progress` に（projectV2 GraphQL: `addProjectV2ItemById`→`updateProjectV2ItemFieldValue`、要 `project` スコープ）。board/scope が無ければ skip し、その旨を完了報告に明記。
 
