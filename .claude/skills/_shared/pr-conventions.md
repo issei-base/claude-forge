@@ -51,7 +51,7 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 
 混入・空セクションが見つかったらこの時点で削ってから投稿する。
 
-## 3. CI 失敗の自動修正分類（`create-pr` / `fix-pr` の自動修正ループ）
+## 3. CI 失敗の自動修正分類（`ship` / `create-pr` / `fix-pr` の自動修正ループ）
 
 | 種別 | 自動修正方針 |
 |------|--------------|
@@ -61,11 +61,11 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 | Terraform validate | 構文・参照エラーを修正する。`terraform plan` の差分そのものはユーザ判断（自動で握りつぶさない） |
 | 設定/env / 外部リソース未準備 / flaky / シークレット不足 | 自動修正対象外。サイクルを打ち切ってユーザに報告する |
 
-## 4. Codex レビュー応答ループ（`create-pr` / `fix-pr` の Codex 応答ループ）
+## 4. Codex レビュー応答ループ（`ship` / `create-pr` / `fix-pr` の Codex 応答ループ）
 
 PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応する有限ループ。
-§3 が CI 失敗を共通化しているのと同じく、ここを唯一の定義とし、create-pr / fix-pr 双方が参照する。
-**ループは draft のまま回し、ready-for-review への昇格も merge も絶対にしない**（review / merge 判断は人間・Codex に委ねる claude-forge の役割分担を壊さない）。
+§3 が CI 失敗を共通化しているのと同じく、ここを唯一の定義とし、ship / create-pr / fix-pr が参照する。
+**ループは PR の review 状態を変えない**（ready なら ready のまま・draft なら draft のまま）。**ready-for-review への昇格も merge も絶対にしない**（review / merge 判断は人間・Codex に委ねる claude-forge の役割分担を壊さない）。
 
 ### 手順（1 サイクル）
 
@@ -113,10 +113,10 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 
 ### 収束 / 停止条件
 
-次のいずれかで停止する（CI の最大 3 サイクルより少なく、最大 2）。
+次のいずれかで停止する（最大 3・CI ループと同数）。
 
 - 新規の **critical / blocking が 0**（自動修正可の指摘が出なくなった）
-- **最大 2 サイクル**到達
+- **最大 3 サイクル**到達
 - 残りが **要人間判断のみ**
 
 停止時、残った要人間判断の指摘は **要約してユーザーに引き継ぐ**（自動で触らない）。
@@ -124,6 +124,6 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 ### 禁止事項（§3 の CI ループ条項と同じ精神の安全ゲート）
 
 - 指摘を黙らせるためのテスト書き換え・握りつぶしをしない（仕様 / 実装のどちらが正しいかを判断する）。
-- **ループは ready-for-review 昇格も merge も絶対にしない（draft のまま）**。
+- **ループは PR の review 状態を変えない（ready なら ready・draft なら draft）・ready-for-review 昇格も merge も絶対にしない**。
 - force push しない。`--force` / `--force-with-lease` はユーザの明示確認がある時だけ。
 - 同意できない指摘を黙って無視しない（dispute としてコメントする）。

@@ -31,7 +31,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(grep:*), Bash(git status:*), 
 4. プッシュ
 5. PR作成
 6. CI検証＋自動修正ループ（最大3サイクル）
-6.5. Codex 応答ループ（§4 参照・最大2サイクル）
+6.5. Codex 応答ループ（§4 参照・最大3サイクル）
 7. 完了報告（PR URL と CI 状況を返す）
 ```
 
@@ -253,7 +253,7 @@ push 後 Step 6-2 に戻る。
 PR 作成済み（ready）・CI ループ通過後、Codex GitHub review の指摘へ自律対応する。
 **手順・分類・収束/停止・禁止事項は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 に従う**（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
 - Codex のレビューコメントを取得 → 各指摘を「自動修正可 / 要人間判断」に分類 → 自動修正可のみ working tree を直し commit + push → `@codex review` を再依頼。
-- 停止: 新規 critical/blocking が 0 / **最大 2 サイクル**（CI の 3 より少なく）/ 残りが要人間判断のみ。残った要人間判断は要約して Step 7 でユーザーに引き継ぐ。
+- 停止: 新規 critical/blocking が 0 / **最大 3 サイクル**（CI ループと同数）/ 残りが要人間判断のみ。残った要人間判断は要約して Step 7 でユーザーに引き継ぐ。
 - **禁止**: 指摘を黙らせるためのテスト書き換え・握りつぶし。**ループは merge しない**（PR は ready だが merge は人間が判断）。force push しない。同意できない指摘は dispute としてコメントし、直さない。
 
 Codex review が無効 / コメントが付かない repo ならこの Step をスキップして Step 7 へ。
