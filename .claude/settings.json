@@ -1,5 +1,6 @@
 {
   "skillListingBudgetFraction": 0.02,
+  "enableAllProjectMcpServers": false,
   "mcpServers": {
     "aws": {
       "command": "uvx",
