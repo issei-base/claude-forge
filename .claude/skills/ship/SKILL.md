@@ -135,18 +135,18 @@ fi
     ```
 - legacy の `claude-review` ラベルは、その repo が意図して Claude GitHub Actions workflows を使い続けている場合だけ付ける。新規 repo へは標準では付けない。
 
-## 5.5 収束ループ（PR 作成後・自動・最大 CI 3 / Codex 2 サイクル）
+## 5.5 収束ループ（PR 作成後・自動・最大 CI 3 / Codex 3 サイクル）
 
-PR を作ったら**そのまま収束ループに入る**（ユーザー確認は挟まない）。入る前に一声 —「収束ループに入る（CI 待ち→Codex レビュー対応・最大 CI 3 / Codex 2 周・**merge も force push もしない**）。不要なら止めて」— と告げてから走る。**ここは安全領域（PR の状態を変えず・非破壊）なので自走でよい。**
+PR を作ったら**そのまま収束ループに入る**（ユーザー確認は挟まない）。入る前に一声 —「収束ループに入る（CI 待ち→Codex レビュー対応・最大 CI 3 / Codex 3 周・**merge も force push もしない**）。不要なら止めて」— と告げてから走る。**ここは安全領域（PR の状態を変えず・非破壊）なので自走でよい。**
 
 ship が作る PR は ready（非 draft）。収束ループは **PR を merge しない・ready/draft 状態を変えない・force push しない**。これだけ守れば create-pr / fix-pr と同じループをそのまま使える。
 
 1. **CI 自動修正ループ（最大 3 サイクル）** — 修正分類は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §3 が唯一の定義。
-   - 起動待ち: push 直後は run 未登録なので ~15 秒待ってから `gh pr checks <PR URL>` で有無確認。`no checks reported` / 空ならスキップして 2 へ。
-   - 完了待ち: `timeout 900 gh pr checks <PR URL> --watch --interval 30`。FAIL なら `gh run list` → `gh run view <run-id> --log-failed` で失敗ログのファイル・行を取得し、§3 に従って根本修正（推測修正しない）→再 push。最大 3 サイクル。
-2. **Codex 応答ループ（最大 2 サイクル）** — 手順・到着待ち polling・**新規判定（現行 head sha 基準）**・収束/停止・禁止事項は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
+   - 起動待ち: push 直後は run 未登録のことがある。`gh pr checks <PR URL>` を 15 秒間隔で数回（~90 秒）見て、check が 1 つも現れなければ「CI なし」と判断してスキップし 2 へ。**15 秒 1 回の `no checks reported` を確定にしない**（後から起動する CI を取りこぼす）。
+   - 完了待ち: `gh pr checks <PR URL> --watch --interval 30`（全 check 完了で返る）。時間上限を付けるなら `timeout` / macOS は `gtimeout` でラップ（どちらも無ければ素の `--watch`）。FAIL なら `gh run list` → `gh run view <run-id> --log-failed` で失敗ログのファイル・行を取得し、§3 に従って根本修正（推測修正しない）→再 push。最大 3 サイクル。
+2. **Codex 応答ループ（最大 3 サイクル）** — 手順・到着待ち polling・**新規判定（現行 head sha 基準）**・収束/停止・禁止事項は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
    - Codex review の到着を待ってから取得（review summary + inline `pulls/.../comments` の両方）→ 各指摘を「自動修正可 / 要人間判断」に分類 → 自動修正可のみ working tree を直し commit + push → `@codex review` を再依頼。
-   - 停止: 新規 critical/blocking が 0 / **最大 2 サイクル** / 残りが要人間判断のみ。残りは §6 で要約してユーザーに引き継ぐ。
+   - 停止: 新規 critical/blocking が 0 / **最大 3 サイクル** / 残りが要人間判断のみ。残りは §6 で要約してユーザーに引き継ぐ。
    - **禁止**: テスト握りつぶし・**merge / ready 昇格 / force push**・dispute の黙殺。
    - Codex review が無効 / コメントが付かない repo ならスキップして §6 へ。
 
