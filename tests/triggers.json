@@ -3,7 +3,7 @@
   "cases": [
     { "query": "S3 bucket の権限ってどう設計するのがベストプラクティス？", "expect": "aws-advisor" },
     { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
-    { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-review" },
+    { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-secondopinion" },
     { "query": "この AWS の docs ページ、受講生用にわかりやすい図解 HTML にして", "expect": "doc-illustrate" },
     { "query": "この設計ドキュメントを多観点でレビューして修正まで回して", "expect": "doc-review" },
     { "query": "https://github.com/acme/app/issues/42 を実装して PR まで出して", "expect": "implement-issue" },
@@ -30,7 +30,7 @@
     { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
     { "query": "このドキュメント、1人でざっと軽くレビューだけして", "expect": "NONE" },
     { "query": "この Zenn 記事をざっと要約して: https://zenn.dev/foo/articles/bar", "expect": "NONE" },
-    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-review" },
+    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-secondopinion" },
     { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" },
     { "query": "S3 のストレージコストが高いので最適化したい、ライフサイクル設計を見て", "expect": "aws-advisor" },
     { "query": "認証方式は OAuth で行くと決めたので、第三者が実装できる粒度で実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/9", "expect": "plan-issue" },
