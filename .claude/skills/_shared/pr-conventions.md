@@ -65,7 +65,7 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 
 PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応する有限ループ。
 §3 が CI 失敗を共通化しているのと同じく、ここを唯一の定義とし、ship / create-pr / fix-pr が参照する。
-**ループは draft のまま回し、ready-for-review への昇格も merge も絶対にしない**（review / merge 判断は人間・Codex に委ねる claude-forge の役割分担を壊さない）。
+**ループは PR の review 状態を変えない**（ready なら ready のまま・draft なら draft のまま）。**ready-for-review への昇格も merge も絶対にしない**（review / merge 判断は人間・Codex に委ねる claude-forge の役割分担を壊さない）。
 
 ### 手順（1 サイクル）
 
@@ -124,6 +124,6 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 ### 禁止事項（§3 の CI ループ条項と同じ精神の安全ゲート）
 
 - 指摘を黙らせるためのテスト書き換え・握りつぶしをしない（仕様 / 実装のどちらが正しいかを判断する）。
-- **ループは ready-for-review 昇格も merge も絶対にしない（draft のまま）**。
+- **ループは PR の review 状態を変えない（ready なら ready・draft なら draft）・ready-for-review 昇格も merge も絶対にしない**。
 - force push しない。`--force` / `--force-with-lease` はユーザの明示確認がある時だけ。
 - 同意できない指摘を黙って無視しない（dispute としてコメントする）。
