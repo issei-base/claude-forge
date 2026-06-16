@@ -18,6 +18,7 @@
     { "query": "ディスクの空きが少ないから、不要なキャッシュやビルド成果物を調査して安全に削除して", "expect": "storage-cleanup" },
     { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
     { "query": "この会議の録音 ~/Downloads/mtg2026.m4a を文字起こしして要点をまとめて", "expect": "gemini-multimodal" },
+    { "query": "最近のセッションログから、うちのスキルが空振り・誤発火した所を拾って改善案を出して", "expect": "skill-reflect" },
     { "query": "今日の東京の天気どう？", "expect": "NONE" },
     { "query": "Python のリスト内包表記の書き方を教えて", "expect": "NONE" },
     { "query": "ありがとう、すごく助かったよ", "expect": "NONE" },
@@ -40,6 +41,10 @@
 
     { "query": "このissueに着手して: https://github.com/acme/app/issues/55", "expect": "implement-issue" },
     { "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて", "expect": "implement-issue" },
-    { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" }
+    { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" },
+
+    { "query": "自分の Claude Code のスキルを、最近のセッションの不発から自己改善して直す案を出して", "expect": "skill-reflect" },
+    { "query": "新しいスキルをゼロから作って", "expect": "NONE" },
+    { "query": "どの skill が何回発火したか回数を集計して見せて", "expect": "NONE" }
   ]
 }
