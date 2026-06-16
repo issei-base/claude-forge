@@ -1,14 +1,14 @@
 ---
 name: ship
-description: 現在の作業を GitHub Pull Request にまで持っていく。必要ならフィーチャーブランチを切り、差分からコミットメッセージと PR タイトル/本文を生成し、push して `gh pr create` で PR を開く。ユーザーが「ship して」「PR出して」「PR作って」「送って」「プルリク」「ship it」「open a PR」「make a PR」「let's ship this」など、現在の変更を PR にしたい意図を示したときに発動する。
-allowed-tools: Read, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remote:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh repo view:*), Bash(gh repo create:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh api:*)
+description: 現在の作業を GitHub Pull Request にまで持っていく。必要ならフィーチャーブランチを切り、差分からコミットメッセージと PR タイトル/本文を生成し、push して `gh pr create` で PR を開く。ユーザーが「ship して」「PR出して」「PR作って」「送って」「プルリク」「ship it」「open a PR」「make a PR」「let's ship this」など、現在の変更を PR にしたい意図を示したときに発動する。PR 作成後は CI と Codex レビューの収束ループ（merge はしない）まで自動で回す。
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(grep:*), Bash(git status:*), Bash(git remote:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh repo view:*), Bash(gh repo create:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh pr comment:*), Bash(gh pr checks:*), Bash(gh api:*), Bash(sleep:*), Bash(timeout:*), Bash(prettier:*), Bash(npx prettier:*), Bash(eslint:*), Bash(npx eslint:*), Bash(ruff:*), Bash(golangci-lint:*), Bash(terraform fmt:*), Bash(terraform validate:*)
 ---
 
 # ship
 
 「変更を PR まで持っていく」end-to-end ワークフロー。各ステップに STOP 条件あり。違反したら自動回復せず必ずユーザーに見せる。
 
-> **PR 系 skill の使い分け:** この `ship` は新規 PR を**対話的に**（自分で確認しながら）出す skill。新規 PR を**自動・委譲で**作るなら [`create-pr`](../create-pr/SKILL.md)（CI 自動修正ループ付きエンジン）、**既存 PR**（PR URL）を直すなら [`fix-pr`](../fix-pr/SKILL.md)。
+> **PR 系 skill の使い分け:** この `ship` は新規 PR を**対話的に**（commit/PR を自分で確認しながら）出す skill。PR 作成後は **CI + Codex レビューの収束ループ**（§5.5・`_shared/pr-conventions.md` §3/§4 共有・merge はしない）まで自動で回す。同じ収束ループを**非対話・委譲で**頭から回すなら [`create-pr`](../create-pr/SKILL.md)（implement-issue 等からの自動エンジン）、**既存 PR**（PR URL）を直すなら [`fix-pr`](../fix-pr/SKILL.md)。
 
 ## 🚫 絶対に守るルール
 
@@ -135,12 +135,28 @@ fi
     ```
 - legacy の `claude-review` ラベルは、その repo が意図して Claude GitHub Actions workflows を使い続けている場合だけ付ける。新規 repo へは標準では付けない。
 
+## 5.5 収束ループ（PR 作成後・自動・最大 CI 3 / Codex 2 サイクル）
+
+PR を作ったら**そのまま収束ループに入る**（ユーザー確認は挟まない）。入る前に一声 —「収束ループに入る（CI 待ち→Codex レビュー対応・最大 CI 3 / Codex 2 周・**merge も force push もしない**）。不要なら止めて」— と告げてから走る。**ここは安全領域（PR の状態を変えず・非破壊）なので自走でよい。**
+
+ship が作る PR は ready（非 draft）。収束ループは **PR を merge しない・ready/draft 状態を変えない・force push しない**。これだけ守れば create-pr / fix-pr と同じループをそのまま使える。
+
+1. **CI 自動修正ループ（最大 3 サイクル）** — 修正分類は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §3 が唯一の定義。
+   - 起動待ち: push 直後は run 未登録なので ~15 秒待ってから `gh pr checks <PR URL>` で有無確認。`no checks reported` / 空ならスキップして 2 へ。
+   - 完了待ち: `timeout 900 gh pr checks <PR URL> --watch --interval 30`。FAIL なら §3 に従い自動修正→再 push を最大 3 サイクル。
+2. **Codex 応答ループ（最大 2 サイクル）** — 手順・到着待ち polling・**新規判定（現行 head sha 基準）**・収束/停止・禁止事項は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
+   - Codex review の到着を待ってから取得（review summary + inline `pulls/.../comments` の両方）→ 各指摘を「自動修正可 / 要人間判断」に分類 → 自動修正可のみ working tree を直し commit + push → `@codex review` を再依頼。
+   - 停止: 新規 critical/blocking が 0 / **最大 2 サイクル** / 残りが要人間判断のみ。残りは §6 で要約してユーザーに引き継ぐ。
+   - **禁止**: テスト握りつぶし・**merge / ready 昇格 / force push**・dispute の黙殺。
+   - Codex review が無効 / コメントが付かない repo ならスキップして §6 へ。
+
 ## 6. 報告
 
 - PR URL を **1 行で** 出力 (ターミナルで clickable になるように)。
 - Codex review が automatic / `@codex review` / 未依頼のどれかを明記する。
+- **収束ループの結果**を報告: CI の最終 PASS/FAIL（**最新 head の結果**・古い PASS を流用しない）・Codex 応答ループのサイクル数・自動修正して push した指摘・**dispute / 要人間判断で残した指摘の要約**。CI も Codex review も無い repo なら「収束ループはスキップ」と明記する。
 - Review コメントは **参考情報**。claude-forge では Branch Protection 無しの運用なので、ユーザーが内容を見て自分で merge ボタンを押す (他リポジトリで Branch Protection を有効化している場合は、その条件に従って判断)。
-- 自動 merge、追加 push はしない。**merge は必ずユーザーが手動で行う方針**。ここで終了。
+- **自動 merge / ready 昇格はしない**（収束ループでの修正 push と `@codex review` 再依頼は §5.5 の範囲内・force push はしない）。**merge は必ずユーザーが手動で行う方針**。ここで終了。
 
 ## やってはいけないこと
 
