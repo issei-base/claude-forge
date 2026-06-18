@@ -88,10 +88,15 @@ def lint() -> int:
         elif len(desc) < MIN_DESC_LEN:
             errors.append(f"[{d}] E4 description too short ({len(desc)} < {MIN_DESC_LEN} chars)")
         else:
-            if not any(mark in desc for mark in TRIGGER_MARKERS):
+            wtu = s["when_to_use"]
+            # The router matches against description + when_to_use combined, so
+            # evaluate trigger guidance (W1) and the length cap (W3) on the same
+            # combined text — not description alone.
+            listing = f"{desc}\n{wtu}" if wtu else desc
+            if not any(mark in listing for mark in TRIGGER_MARKERS):
                 warns.append(f"[{d}] W1 description has no obvious trigger guidance (when-to-use / examples)")
             # W3: keep description+when_to_use under the listing cap (see module docstring).
-            combined = len(desc) + len(s["when_to_use"])
+            combined = len(desc) + len(wtu)
             if combined > DESC_LISTING_CAP:
                 warns.append(
                     f"[{d}] W3 description+when_to_use {combined} chars > {DESC_LISTING_CAP} listing cap "

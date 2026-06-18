@@ -38,7 +38,13 @@ FIXTURES = Path(__file__).resolve().parent / "triggers.json"
 
 
 def build_prompt(skills: list[dict], query: str) -> str:
-    catalog = "\n".join(f"- {s['name']}: {s['description']}" for s in skills if s["name"])
+    # Feed the judge the same text the real router sees: description +
+    # when_to_use combined (CC concatenates both in the skill listing).
+    catalog = "\n".join(
+        f"- {s['name']}: {s['description']}" + (f" {s['when_to_use']}" if s.get("when_to_use") else "")
+        for s in skills
+        if s["name"]
+    )
     return (
         "You are the skill router for a Claude Code project. Below is the catalog "
         "of available skills with the description that governs when each one should "
