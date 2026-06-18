@@ -116,10 +116,14 @@ def parse_frontmatter(text: str) -> dict:
 
 
 def load_skills() -> list[dict]:
-    """Return one record per local skill: dir, name, description, path.
+    """Return one record per local skill: dir, name, description, when_to_use, path.
 
     Scaffold/local-only dirs (see is_ignored_dir) are skipped so a `_template`
     SKILL.md or a gitignored personal skill never counts as a public skill.
+
+    ``when_to_use`` is parsed too because CC's skill listing truncates
+    ``description`` + ``when_to_use`` *combined* at a fixed cap (see lint W3), so
+    the length guard must sum both fields, not just description.
     """
     skills = []
     for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
@@ -131,6 +135,7 @@ def load_skills() -> list[dict]:
                 "dir": skill_md.parent.name,
                 "name": fm.get("name", ""),
                 "description": fm.get("description", ""),
+                "when_to_use": fm.get("when_to_use", ""),
                 "path": skill_md,
             }
         )
