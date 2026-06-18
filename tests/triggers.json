@@ -25,6 +25,8 @@
 
     { "query": "Claude の公式ドキュメントのこのページを図解でわかりやすくまとめて受講生用 HTML に: https://docs.claude.com/en/docs/agents", "expect": "doc-illustrate" },
     { "query": "この Qiita の Claude Code 記事、うちの claude-forge に取り込めるか診断して: https://qiita.com/x/items/y", "expect": "cc-article" },
+    { "query": "この Zenn 記事のやり方、うちの Claude Code 環境よくできるか見て: https://zenn.dev/foo/articles/baz", "expect": "cc-article" },
+    { "query": "この記事の手法で、うちの既存 skill を改善・育てられないか診断して: https://zenn.dev/foo/articles/qux", "expect": "cc-article" },
     { "query": "変更をコミットして PR 出して", "expect": "ship" },
     { "query": "/create-pr でこの変更を PR にして", "expect": "create-pr" },
     { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
