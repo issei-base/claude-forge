@@ -20,6 +20,10 @@ Checks (ERROR = non-zero exit; WARN = printed, still exits 0 if no errors):
   W1  description carries explicit trigger guidance (example phrases / when-to-use)
   W2  every skill has at least one fixture in triggers.json (so a new skill can't
       land without a firing test; --strict turns this into an error in CI)
+  W3  `description` + `when_to_use` stays under the skill-listing cap. CC truncates
+      the combined text at DESC_LISTING_CAP chars in the listing the router sees
+      (docs.claude.com/.../skills); past it, trailing trigger phrases are dropped
+      and auto-firing silently degrades. Warns approaching the cap, before it bites.
 
 Usage:
   python3 tests/lint_skills.py [--strict]   # --strict: treat warnings as errors
@@ -34,6 +38,12 @@ from pathlib import Path
 from _skills import SKILLS_DIR, find_orphan_dirs, load_skills
 
 MIN_DESC_LEN = 40
+# CC truncates `description` + `when_to_use` combined at this many chars in the
+# skill listing the router matches against (docs.claude.com/.../skills). Past it,
+# trailing trigger phrases are silently dropped and auto-firing degrades.
+DESC_LISTING_CAP = 1536
+# Warn before the cap actually bites, so there's runway to trim (~85%).
+DESC_WARN_AT = 1300
 FIXTURES = Path(__file__).resolve().parent / "triggers.json"
 # Soft signal that a description tells the router WHEN to fire. Any one hit
 # silences W1. Kept broad on purpose — this is a nudge, not a gate.
@@ -77,8 +87,21 @@ def lint() -> int:
             errors.append(f"[{d}] E4 missing `description`")
         elif len(desc) < MIN_DESC_LEN:
             errors.append(f"[{d}] E4 description too short ({len(desc)} < {MIN_DESC_LEN} chars)")
-        elif not any(mark in desc for mark in TRIGGER_MARKERS):
-            warns.append(f"[{d}] W1 description has no obvious trigger guidance (when-to-use / examples)")
+        else:
+            if not any(mark in desc for mark in TRIGGER_MARKERS):
+                warns.append(f"[{d}] W1 description has no obvious trigger guidance (when-to-use / examples)")
+            # W3: keep description+when_to_use under the listing cap (see module docstring).
+            combined = len(desc) + len(s["when_to_use"])
+            if combined > DESC_LISTING_CAP:
+                warns.append(
+                    f"[{d}] W3 description+when_to_use {combined} chars > {DESC_LISTING_CAP} listing cap "
+                    "— trailing trigger phrases get truncated (auto-firing degrades)"
+                )
+            elif combined > DESC_WARN_AT:
+                warns.append(
+                    f"[{d}] W3 description+when_to_use {combined} chars approaching {DESC_LISTING_CAP} cap "
+                    "— trim before trigger phrases truncate"
+                )
 
     for name, dirs in by_name.items():
         if len(dirs) > 1:
