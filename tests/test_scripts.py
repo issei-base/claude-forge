@@ -72,11 +72,6 @@ class TestIgnoredDirs(unittest.TestCase):
         # 名前としては例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
         self.assertFalse(is_ignored_dir("ohayou"))
 
-    def test_local_only_personal_skill_ignored(self):
-        # x-buzz は個人用 (X 自動投稿) でローカルのみ・gitignore 済み。public repo に
-        # 出さないため IGNORED_SKILL_DIRS に登録 = lint 対象外 (triggers fixture 不要)。
-        self.assertTrue(is_ignored_dir("x-buzz"))
-
 
 class TestVerifyTokens(unittest.TestCase):
     def test_norm_strips_whitespace(self):

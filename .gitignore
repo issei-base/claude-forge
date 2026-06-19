@@ -13,13 +13,6 @@ node_modules/
 #     だけが残る。受講生名・パートナー名を含む。元 .claude/skills/ohayou/ から tools/ へ移設。
 tools/
 
-# 個人用 skill（ローカルのみ・public repo に出さない）。install.sh は SKILL.md が
-# あれば gitignore でも symlink するのでローカルでは普通に発火する。lint 対象外に
-# するには tests/_skills.py の IGNORED_SKILL_DIRS にも同じ名前を足すこと。
-#   - x-buzz: 個人の X アカウントへ自動投稿。~/.x-buzz-auto/ に個人データを持つ。
-#     （旧版は履歴 2c21b8f..edaf7ab に残存。secrets は無く skill ロジックのみ。）
-/.claude/skills/x-buzz/
-
 # doc-illustrate が生成する HTML 要約。claude-forge は public repo なので
 # 追跡しない（ローカル保管のみ）。出力先はプロジェクト直下 summaries/。
 summaries/
