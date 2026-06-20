@@ -15,7 +15,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | `.claude/skills/<name>/SKILL.md` | skill 本体。description で自動発火 or `/<name>` で明示呼び |
 | `.claude/skills/<name>/{assets,references,scripts}/` | skill 同梱のテンプレ・参照資料・補助スクリプト (任意) |
 | `.claude/skills/_template/SKILL.md.tmpl` | 新規 skill の雛形 (`_` 始まり = lint/install/発火の対象外。`.tmpl` なので skill 登録もされない) |
-| `.claude/agents/` | カスタム agent (doc-reviewer / doc-impl-reviewer) |
+| `.claude/agents/` | カスタム agent (doc-reviewer / doc-impl-reviewer / skill-reviewer / leak-auditor / fact-checker) |
 | `.claude/hooks/skill-lint.py` | Stop hook。SKILL.md を編集したターン終了時に `tests/lint_skills.py` を走らせ、壊れてたら `exit 2` で停止をブロック |
 | `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
 | `install.sh` | 全 skill + agent を `~/.claude/` に symlink (global 運用)。`_`/SKILL.md 無しの dir はスキップ。`--dry-run` 可 |
