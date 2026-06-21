@@ -16,6 +16,8 @@
     { "query": "この変更を ship して", "expect": "ship" },
     { "query": "受講生のこのシートの6回目の課題に ALB のハンズオンを出して書き込んで: https://docs.google.com/spreadsheets/d/1AbCdEfExampleSheetId0123456789/edit?gid=0", "expect": "make-kadai" },
     { "query": "ディスクの空きが少ないから、不要なキャッシュやビルド成果物を調査して安全に削除して", "expect": "storage-cleanup" },
+    { "query": "S3 のストレージコストが高いので保存クラスを見直して削減したい", "expect": "aws-advisor" },
+    { "query": "~/Downloads/old.zip を1つ消しといて", "expect": "NONE" },
     { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
     { "query": "この会議の録音 ~/Downloads/mtg2026.m4a を文字起こしして要点をまとめて", "expect": "gemini-multimodal" },
     { "query": "最近のセッションログから、うちのスキルが空振り・誤発火した所を拾って改善案を出して", "expect": "skill-reflect" },
