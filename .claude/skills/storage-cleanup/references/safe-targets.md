@@ -28,7 +28,7 @@ macOS の空き容量はデータボリュームで見る: `df -h /System/Volume
 
 | パス | 正体 | 削除の条件・影響 |
 |---|---|---|
-| `~/Library/Application Support/<Electron App>/Partitions` | Electron アプリのオフラインキャッシュ（例: Notion で 10GB 級） | 本体を閉じてから `rm -r`。**次回起動で再ログイン + 全再同期**が走る（実データはサーバ側）。オフライン編集の未同期分があれば注意 |
+| `~/Library/Application Support/<Electron App>/Partitions`（**サーバ同期が確認できるアプリのみ**: 例 Notion） | Electron の web partition。オフラインキャッシュに加え **Cookie / IndexedDB / LocalStorage（＝ローカル実データ）も含む** | 既定は**触らない**。クラウド同期で再生成されると**確認できたアプリに限り**（例: Notion）、本体を閉じてから `rm -r`。次回起動で**再ログイン + 全再同期**が走る。**ローカルファースト / 同期未確認 / 未同期データを持つアプリの `Partitions` は実データ喪失なので消さない（Tier 3 に倒す）** |
 | `~/Library/Containers/com.docker.docker/Data/vms` | Docker の VM ディスク（全イメージ/コンテナ/ボリュームを内包） | 起動中なら `docker system prune`（必要なら `-a --volumes`）で**正規に**縮小が安全。VM ごと工場出荷リセットするなら**全ローカルデータ喪失**を承認の上で `rm -r .../Data/vms/0`（次回起動で空 VM を再作成）。`com.docker.vmnetd` は常駐 root helper で**本体ではない**ので、これだけ残っていても Docker Desktop は終了済み |
 | `~/Library/Application Support/Claude/vm_bundles` | Claude Desktop のローカル VM ディスクイメージ（10GB 級） | **VM / サンドボックス機能を使わないユーザーのみ削除可。** Claude Desktop **本体が起動中**だとイメージを掴んでいて `rm` しても `df` の空きが戻らない（held file・`lsof \| grep claudevm` で確認）→ **本体終了後に `rm -r`**（VM イメージなので truncate は不可＝壊れる。held ログの truncate 則は適用しない）。VM / サンドボックス機能を使うなら次回起動で再生成されるので恒久的な回収にはならない |
 | `~/Library/Developer/CoreSimulator/Devices` | iOS シミュレータの実体（入れたアプリ状態を含む） | 全削除はしない。`xcrun simctl delete unavailable` で**古い / 利用不可ランタイムのみ**消す。全消しは実機開発に影響 |
@@ -43,6 +43,7 @@ macOS の空き容量はデータボリュームで見る: `df -h /System/Volume
 | パス | 中身 |
 |---|---|
 | `~/Library/Application Support/<App>`（Notion / Code / obsidian / minecraft / Slack のデータ部 等） | アプリの本体データ。キャッシュ部分だけは Tier 1 の `Caches` 側で扱う |
+| `~/Library/Application Support/<Electron App>/Partitions`（**サーバ同期が確認できないアプリ**） | Cookie / IndexedDB / LocalStorage 等のローカル実データを含む。同期で再生成されると確認できたアプリ（Notion 等）だけ Tier 2、それ以外は消さない |
 | `~/Library/Group Containers/*`（OneDrive / Office 等） | クラウド同期データ。消すと再同期 or データ喪失リスク |
 | `~/.nvm`, インストール済み Node | 消すと再インストールが必要 |
 | `~/.codex`, `~/.local` | config / session / インストール物が混在 |

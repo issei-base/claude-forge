@@ -58,7 +58,7 @@ Tier の定義と具体的な対象パス・根拠は `references/safe-targets.m
   - 古いシミュレータ: `xcrun simctl delete unavailable`
 - **永続データストア（Tier 2）** は影響説明 + 承認の後に削除する。閉じても消えないので、回収するには明示削除が要る:
   - Docker VM: 正規には起動中に `docker system prune`（必要なら `-a --volumes`）で縮小。VM ごと工場出荷リセットするなら**全イメージ/コンテナ/ボリュームを失う**ことを承認の上で `rm -r ~/Library/Containers/com.docker.docker/Data/vms/0`（次回起動で空の VM を再作成）。
-  - Electron の `Partitions/`（例: Notion のオフラインキャッシュ）: 本体を閉じてから `rm -r`。**次回起動で再ログイン + 全再同期**になる旨を伝える。
+  - Electron の `Partitions/`（**サーバ同期が確認できるアプリのみ**・例: Notion）: 本体を閉じてから `rm -r`。**次回起動で再ログイン + 全再同期**になる旨を伝える。`Partitions` は Cookie / IndexedDB / LocalStorage（ローカル実データ）も含むので、**同期が確認できない / ローカルファーストのアプリは Tier 3 として消さない**。
 - **起動中アプリのキャッシュを回収する場合**は Phase 2 の手順（`osascript … quit` → 本体終了を確認 → 削除）に従う。
 - 大量削除（DerivedData / Partitions / DeviceSupport など）は時間がかかる → `run_in_background` で実行し、完了を待ってから次へ。
 - 完了後に `df` を再測定し、**Before / After + 回収容量**を表で報告する。

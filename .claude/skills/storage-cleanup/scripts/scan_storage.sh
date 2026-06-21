@@ -73,7 +73,12 @@ for p in \
   "$H/Library/Containers/com.docker.docker/Data/vms" \
   "$H/Library/Application Support/com.apple.wallpaper/aerials" \
 ; do row "$p"; done
-# Electron の Partitions (Notion 等のオフラインキャッシュ。閉じても残る＝永続ストア)
+hr
+
+echo "## 参考: Electron の Partitions (**既定は触らない**・自動削除候補ではない)"
+echo "   ※ Partitions は Cookie / IndexedDB / LocalStorage 等のローカル実データを含む。"
+echo "   ※ クラウド同期で再生成されると確認できたアプリ(例: Notion)だけ Tier2 として承認の上で削除可。"
+echo "   ※ 同期が確認できない / ローカルファースト / 未同期データを持つアプリは Tier3 扱いで消さない。"
 find "$H/Library/Application Support" -maxdepth 2 -type d -name "Partitions" \
   -prune 2>/dev/null | while IFS= read -r d; do row "$d"; done | sort -rh | head -8
 hr
