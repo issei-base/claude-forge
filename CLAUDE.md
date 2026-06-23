@@ -17,6 +17,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | `.claude/skills/_template/SKILL.md.tmpl` | 新規 skill の雛形 (`_` 始まり = lint/install/発火の対象外。`.tmpl` なので skill 登録もされない) |
 | `.claude/agents/` | カスタム agent (doc-reviewer / doc-impl-reviewer / skill-reviewer / leak-auditor / fact-checker) |
 | `.claude/hooks/skill-lint.py` | Stop hook。SKILL.md を編集したターン終了時に `tests/lint_skills.py` を走らせ、壊れてたら `exit 2` で停止をブロック |
+| `.claude/hooks/git-push-guard.py` | PreToolUse hook (Bash)。宛先が `main`/`master` の `git push` を harness 層で deny し、「main 直 push 禁止」を ship の散文ガードから格上げ。`rm -rf`/`sudo` 等は settings の permissions.deny 済みなので扱わない |
 | `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
 | `install.sh` | 全 skill + agent を `~/.claude/` に symlink (global 運用)。`_`/SKILL.md 無しの dir はスキップ。`--dry-run` 可 |
 | `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。個人用上書きは `.claude/settings.local.json`（gitignore） |

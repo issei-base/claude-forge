@@ -33,6 +33,7 @@ SKILLS = REPO_ROOT / ".claude" / "skills"
 vfy = _load(SKILLS / "doc-illustrate" / "scripts" / "verify.py", "verify")
 skd = _load(SKILLS / "make-kadai" / "scripts" / "sheet_kadai.py", "sheet_kadai")
 slint = _load(REPO_ROOT / ".claude" / "hooks" / "skill-lint.py", "skill_lint")
+gpg = _load(REPO_ROOT / ".claude" / "hooks" / "git-push-guard.py", "git_push_guard")
 
 
 class TestFrontmatter(unittest.TestCase):
@@ -201,6 +202,67 @@ class TestSymlinkDrift(unittest.TestCase):
             missing, linked = slint.symlink_drift(skills, home)
             self.assertEqual(linked, [])
             self.assertEqual(missing, ["a"])
+
+
+class TestGitPushGuard(unittest.TestCase):
+    """PreToolUse hook: main/master への直接 push を harness 層で deny する。"""
+
+    def test_denies_direct_push_to_protected(self):
+        for cmd in [
+            "git push origin main",
+            "git push origin master",
+            "git push -f origin main",
+            "git push --force origin master",
+            "git push origin HEAD:main",
+            "git push origin local:master",
+            "git push --set-upstream origin main",
+            "git push origin +refs/heads/main",
+            # 複合コマンドの末尾に紛れていても拾う (if フィルタを使わない理由)
+            "git add -A && git commit -m x && git push origin main",
+        ]:
+            self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_non_protected_pushes(self):
+        for cmd in [
+            "git push origin HEAD",          # 文字列に main/master が出ない
+            "git push -u origin HEAD",
+            "git push origin develop",
+            "git push origin feature/login",
+            "git push origin feature/main-thing",  # 部分一致は誤爆させない
+            "git push origin mymain",
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_non_push_commands_mentioning_main(self):
+        for cmd in [
+            "git checkout main",
+            "git rebase main",
+            "cat main.py",
+            "echo main && ls",
+            "git commit -m 'fix main bug'",
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_git_push_as_string_argument(self):
+        # git push がコマンドではなく引数・メッセージ・本文として現れるだけのケースは
+        # deny しない (この hook 自身の PR 作成を gh pr create がブロックした回帰)。
+        for cmd in [
+            'gh pr create --title x --body "see: git push origin main"',
+            'echo "git push origin main"',
+            'git commit -m "あとで git push origin main する"',
+            'grep "git push origin main" notes.txt',
+            'printf "%s" "git push origin master"',
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_detects_push_with_git_global_options(self):
+        # サブコマンド前にグローバルオプションが挟まっても push と判定する。
+        for cmd in [
+            "git -c http.sslVerify=false push origin main",
+            "git --no-pager push origin master",
+            "git -C /repo push origin main",
+        ]:
+            self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
 
 
 if __name__ == "__main__":
