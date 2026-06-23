@@ -33,6 +33,7 @@ SKILLS = REPO_ROOT / ".claude" / "skills"
 vfy = _load(SKILLS / "doc-illustrate" / "scripts" / "verify.py", "verify")
 skd = _load(SKILLS / "make-kadai" / "scripts" / "sheet_kadai.py", "sheet_kadai")
 slint = _load(REPO_ROOT / ".claude" / "hooks" / "skill-lint.py", "skill_lint")
+gpg = _load(REPO_ROOT / ".claude" / "hooks" / "git-push-guard.py", "git_push_guard")
 
 
 class TestFrontmatter(unittest.TestCase):
@@ -201,6 +202,46 @@ class TestSymlinkDrift(unittest.TestCase):
             missing, linked = slint.symlink_drift(skills, home)
             self.assertEqual(linked, [])
             self.assertEqual(missing, ["a"])
+
+
+class TestGitPushGuard(unittest.TestCase):
+    """PreToolUse hook: main/master への直接 push を harness 層で deny する。"""
+
+    def test_denies_direct_push_to_protected(self):
+        for cmd in [
+            "git push origin main",
+            "git push origin master",
+            "git push -f origin main",
+            "git push --force origin master",
+            "git push origin HEAD:main",
+            "git push origin local:master",
+            "git push --set-upstream origin main",
+            "git push origin +refs/heads/main",
+            # 複合コマンドの末尾に紛れていても拾う (if フィルタを使わない理由)
+            "git add -A && git commit -m x && git push origin main",
+        ]:
+            self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_non_protected_pushes(self):
+        for cmd in [
+            "git push origin HEAD",          # 文字列に main/master が出ない
+            "git push -u origin HEAD",
+            "git push origin develop",
+            "git push origin feature/login",
+            "git push origin feature/main-thing",  # 部分一致は誤爆させない
+            "git push origin mymain",
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_non_push_commands_mentioning_main(self):
+        for cmd in [
+            "git checkout main",
+            "git rebase main",
+            "cat main.py",
+            "echo main && ls",
+            "git commit -m 'fix main bug'",
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
 
 
 if __name__ == "__main__":
