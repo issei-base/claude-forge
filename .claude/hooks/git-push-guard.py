@@ -38,9 +38,43 @@ import sys
 # refspec 解析にはこの粒度で十分。
 SEGMENT_SPLIT = re.compile(r"&&|\|\||;|\||\n")
 
-# そのセグメントが git push を起動しているか (`git push`, `/usr/bin/git push`,
-# `git -c foo=bar push` 等を許容)。
-GIT_PUSH = re.compile(r"\bgit\b[^\n]*?\bpush\b", re.IGNORECASE)
+# git のグローバルオプションのうち「次のトークンを引数に取る」もの。push が
+# サブコマンドかを判定する際に値ごと読み飛ばす (例: `git -c k=v push ...`)。
+_GIT_OPTS_WITH_ARG = {"-c", "-C", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+
+
+def is_git_push_command(segment: str) -> bool:
+    """segment が実際に `git push ...` を **起動** しているか。
+
+    `gh pr create --body "...git push origin main..."` や
+    `git commit -m "あとで git push origin main"` のように、git push が
+    コマンドではなく引数・メッセージ・本文として現れるだけのケースを誤検知しない
+    ため、(1) コマンド語が git か (2) 最初の位置引数 (= サブコマンド) が push か、
+    の 2 段で判定する。単純な部分一致 (`\\bgit\\b.*push`) はこの誤検知を起こす。
+    """
+    toks = segment.strip().split()
+    i = 0
+    # 先頭の環境変数代入 (FOO=bar git ...) と sudo/exec 系ラッパを読み飛ばす。
+    while i < len(toks) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", toks[i]):
+        i += 1
+    while i < len(toks) and toks[i] in ("sudo", "command", "exec", "nice", "nohup"):
+        i += 1
+    # コマンド語が git / *(/)git でなければ git push ではない (gh, echo, grep 等を除外)。
+    if i >= len(toks) or (toks[i] != "git" and not toks[i].endswith("/git")):
+        return False
+    # git の最初の位置引数 = サブコマンド。グローバルオプションは読み飛ばす。
+    j = i + 1
+    while j < len(toks):
+        t = toks[j]
+        if t in _GIT_OPTS_WITH_ARG:
+            j += 2
+            continue
+        if t.startswith("-"):
+            j += 1
+            continue
+        return t == "push"
+    return False
+
 
 # 宛先 refspec が main / master を指すトークン。
 #   main / master            … ブランチ名直指定
@@ -56,9 +90,14 @@ PROTECTED_REF = re.compile(
 
 
 def is_push_to_protected(command: str) -> bool:
-    """command 内に「宛先が main/master の git push」セグメントがあれば True。"""
+    """command 内に「宛先が main/master の git push」セグメントがあれば True。
+
+    限界: セグメント分割は &&/||/;/|/改行 で行うため、heredoc 本文の行がそれ単体で
+    ちょうど `git push origin main` という形になっている場合は誤検知しうる。PR 本文
+    等を渡す時は `--body-file` を使えば回避できる。
+    """
     for segment in SEGMENT_SPLIT.split(command):
-        if GIT_PUSH.search(segment) and PROTECTED_REF.search(segment):
+        if is_git_push_command(segment) and PROTECTED_REF.search(segment):
             return True
     return False
 

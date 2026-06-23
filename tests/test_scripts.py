@@ -243,6 +243,27 @@ class TestGitPushGuard(unittest.TestCase):
         ]:
             self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
 
+    def test_allows_git_push_as_string_argument(self):
+        # git push がコマンドではなく引数・メッセージ・本文として現れるだけのケースは
+        # deny しない (この hook 自身の PR 作成を gh pr create がブロックした回帰)。
+        for cmd in [
+            'gh pr create --title x --body "see: git push origin main"',
+            'echo "git push origin main"',
+            'git commit -m "あとで git push origin main する"',
+            'grep "git push origin main" notes.txt',
+            'printf "%s" "git push origin master"',
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_detects_push_with_git_global_options(self):
+        # サブコマンド前にグローバルオプションが挟まっても push と判定する。
+        for cmd in [
+            "git -c http.sslVerify=false push origin main",
+            "git --no-pager push origin master",
+            "git -C /repo push origin main",
+        ]:
+            self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
+
 
 if __name__ == "__main__":
     unittest.main()
