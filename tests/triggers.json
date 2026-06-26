@@ -55,6 +55,11 @@
 
     { "query": "自分の Claude Code のスキルを、最近のセッションの不発から自己改善して直す案を出して", "expect": "skill-reflect" },
     { "query": "新しいスキルをゼロから作って", "expect": "NONE" },
-    { "query": "どの skill が何回発火したか回数を集計して見せて", "expect": "NONE" }
+    { "query": "どの skill が何回発火したか回数を集計して見せて", "expect": "NONE" },
+
+    { "query": "このガードレールの記事をチームの AI 活用プレイブックに取り込んで反映して: https://example.com/guardrails", "expect": "playbook-sync" },
+    { "query": "この内容を ai-team-playbook の該当テーマに蒸留してまとめて入れて", "expect": "playbook-sync" },
+    { "query": "この Claude Code の記事、うちの CC 環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc", "expect": "cc-article" },
+    { "query": "このチーム運用の記事をわかりやすく解説して。プレイブックには入れなくていい: https://example.com/ops", "expect": "explain-article" }
   ]
 }

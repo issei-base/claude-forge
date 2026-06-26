@@ -1,0 +1,68 @@
+---
+name: playbook-sync
+description: "チームの『AI 活用のあるべき論』を集めた private repo (issei-base/ai-team-playbook) に、渡されたテキストやリンクを蒸留して取り込み、該当テーマの md を更新して main にコミット&push する skill。リンクは要約モデルを挟まず生テキストで取得し、原文の逐語コピーでなく『あるべき論』に蒸留して既存の構成に統合する。ユーザーが「これをプレイブックに入れて」「この記事をチームの AI 活用ドキュメントに取り込んで」「ガードレールの方針にこれを追記して」「この内容を ai-team-playbook に反映して」「<URL> をプレイブックの該当テーマにまとめて」などと、テキスト/リンクをチームのプレイブック repo へ取り込むよう求めたときに発動する。外部記事を読んで自分の CC 環境(claude-forge skill / 個人設定)を良くできるか診断するのは [[cc-article]]、記事をチャットで解説するだけなら [[explain-article]]、公式 docs を図解 HTML 教材にするのは [[doc-illustrate]]。単に要約・解説してほしいだけで repo に書き込まないなら、この skill は使わない。"
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(python3:*), Bash(curl:*), Read, Edit, Write
+---
+
+# playbook-sync
+
+チームの「AI 活用のあるべき論」を集めた **private repo `issei-base/ai-team-playbook`** に、渡されたテキスト/リンクの内容を蒸留して取り込む skill。原文のコピペではなく、**チームの規範（あるべき論）として既存のテーマ md に統合**し、main にコミット&push する。
+
+## 対象リポジトリ
+
+- GitHub: `issei-base/ai-team-playbook`（private）
+- ローカル: `~/projects/ai-team-playbook`。**無ければ最初に clone する**: `gh repo clone issei-base/ai-team-playbook ~/projects/ai-team-playbook`
+- テーマ別 md がルートにある。構成は repo の `README.md` を見て把握する（増減しうるので記憶に頼らない）。
+
+## ワークフロー
+
+### 1. 入力を生テキストで取得する
+- **リンク**は要約モデルを挟まず生テキストで取る（[[cc-article]] / [[doc-illustrate]] と同じ原則）。claude-forge 原本の絶対パスで叩く（cwd 非依存）: `python3 ~/projects/claude-forge/.claude/skills/doc-illustrate/scripts/extract.py <URL>`。失敗したら `curl -sL -A "Mozilla/5.0" <URL>`。**WebFetch は最後の手段**（小型モデルがコマンド・数値を幻覚する）。
+- **貼り付けテキスト**はそのまま使う。**複数の URL / テキスト**を一度に渡されたら、それぞれ取得してから 1 回の更新にまとめる。
+- JS 描画 / 会員限定で本文が取れない時は、推測で埋めず**本文の貼り付けを頼む**。
+
+### 2. どのテーマ md に入れるか決める
+まず repo を最新化する（`cd ~/projects/ai-team-playbook && git pull -q`）。内容を読み、下表で**入れ先を 1 つ選ぶ**:
+
+| 内容の性質 | 入れ先 |
+|---|---|
+| 設計思想・なぜそうするか（大原則） | `principles.md` |
+| 権限・Sandbox・managed settings・hook | `guardrails.md` |
+| 機密・PII・secret・データの送受信区分 | `secrets-and-data.md` |
+| 監査ログ・テレメトリ・可観測性 | `observability.md` |
+| 外部連携（MCP）・連携の承認フロー | `mcp.md` |
+| コードレビュー・merge 判断 | `code-review.md` |
+| 利用開始手順・禁止事項・連絡先 | `getting-started.md` |
+
+- **どのテーマにも収まらない新領域**なら、新しい md を作り `README.md` の「テーマ一覧」と「読む順番」に 1 行足す。
+- **入れ先が複数にまたがる / 判断に迷う**ときは、勝手に決めず「どのテーマに入れるか」をユーザーに一言確認する。
+
+### 3. あるべき論に蒸留して統合する
+- **逐語コピーしない。** 「チームはこうあるべき / こうする」という規範の言い回しに直す。
+- **既存ファイルの構成・粒度・文体に合わせる。** 単純に末尾へ append せず、該当する見出し / セクションに溶け込ませる。同じ趣旨が既にあれば**重複させず、補強・更新**する（[[cc-article]] の craft と同じ: 重複を書かない・粒度を揃える）。
+- **断定で書く。** 「〜など特殊なときに」のような曖昧表現は避け、「使うのは X のみ。通常は Y」の形にする。
+- **社内固有のノイズを落とす。** issue 番号・マイルストーン名・個人名・社内ツール名・非公開 URL は規範本文に残さない（再利用可能な「あるべき論」に蒸留する）。受講生の個人情報・非公開 URL は絶対に書かない。
+- **元ネタの主張を鵜呑みにしない。** ツールの挙動・上限・コマンド・「新機能」は公式（`docs.claude.com` / changelog 等）で裏取りし、不確かなら「現行で要確認」と添える。AI 関連は変化が速い。
+
+### 4. main にコミット&push する
+- この repo の方針は **main 直コミット&push**（ソロ curation のため worktree も PR も作らない）。
+- コミットメッセージは**日本語**。何をどのテーマに取り込んだかを 1 行目に書き、本文に出典（URL / 出どころ）を残す。末尾に `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`。
+- `git push` で push する（upstream 追跡済み）。
+
+### 5. 完了報告
+- 更新したファイル・追加/変更した要点・commit を報告する（`gh browse -n` 等で URL を添えてもよい）。
+- 取り込みを見送った内容があれば、その理由も正直に伝える。
+
+## してはいけないこと
+
+- **原文のコピペで済ませない。** あるべき論に蒸留して既存構成へ統合するのがこの skill の主役。
+- **入れ先を勝手に増やさない。** まず既存テーマに収まらないか見る。新規 md は本当に新領域のときだけ作り、README に必ずリンクを足す。
+- **社内固有情報・個人情報・非公開 URL・secret を規範本文に残さない。** 蒸留時に必ず落とす。
+- **元ネタの AI 知識を鵜呑みにして書かない。** コマンド・上限・新機能は一次ソースで裏取りし、不確かなら明示する。
+- **claude-forge を更新しない。** この skill が触るのは `~/projects/ai-team-playbook` だけ。claude-forge 自体の変更は [[ship]] 等の別フローで。
+- **要約・解説だけで終わらせない / 逆に repo 書き込みを伴わない依頼に発動しない。** 解説だけなら [[explain-article]]、CC 環境への取り込み診断なら [[cc-article]]。
+
+## 関連
+
+- 生テキスト取得・一次ソース裏取りの原則は [[cc-article]] / [[doc-illustrate]] と同じ。`extract.py` も [[doc-illustrate]] のものを流用。**役割の違い**: cc-article=記事→自分の CC 環境改善診断、explain-article=記事をチャット解説、playbook-sync=テキスト/リンク→**チームの規範 repo を更新**。
+- repo 構成・既存テーマは `~/projects/ai-team-playbook/README.md` が source of truth。
