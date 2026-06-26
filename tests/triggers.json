@@ -60,6 +60,9 @@
     { "query": "このガードレールの記事をチームの AI 活用プレイブックに取り込んで反映して: https://example.com/guardrails", "expect": "playbook-sync" },
     { "query": "この内容を ai-team-playbook の該当テーマに蒸留してまとめて入れて", "expect": "playbook-sync" },
     { "query": "この Claude Code の記事、うちの CC 環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc", "expect": "cc-article" },
-    { "query": "このチーム運用の記事をわかりやすく解説して。プレイブックには入れなくていい: https://example.com/ops", "expect": "explain-article" }
+    { "query": "このチーム運用の記事をわかりやすく解説して。プレイブックには入れなくていい: https://example.com/ops", "expect": "explain-article" },
+
+    { "query": "このリンク、まず読んで cc-article か playbook-sync かどっちの skill がいいか判断して: https://zenn.dev/foo/articles/triage", "expect": "link-triage" },
+    { "query": "宛先は任せるから、この記事を読んでどの skill で扱うか決めて: https://qiita.com/x/items/z", "expect": "link-triage" }
   ]
 }
