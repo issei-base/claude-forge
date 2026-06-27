@@ -1,6 +1,6 @@
 ---
 name: link-triage
-description: "リンク/記事の URL **またはセミナー・勉強会で学んだメモ / 貼り付けテキスト**を、宛先を指定せず渡されたとき、すぐに cc-tune や playbook-sync を発火させず、まず（URL なら）本文を生テキストで読んでから『どの skill が有効か』を判定して理由つきで提案し、判断をユーザーに委ねるトリアージ skill。入力は URL でもメモでも受ける。判定の選択肢は 自分の CC 環境改善=cc-tune / チーム規範 repo 反映=playbook-sync / 中身を解説するだけ=explain-article / 図解 HTML 教材=doc-illustrate / どれも不要(素の Claude)。自分では診断・取り込み・書き込みをせず、承認後に選ばれた skill へ橋渡しするだけ。ユーザーが「このリンクどっちの skill がいい?」「読んでから判断して」「これ cc-tune? playbook-sync?」「宛先は任せる、まず読んで決めて」「このセミナーのメモ、どの skill で扱うのがいい?」などと、宛先を決めずにリンク/記事/メモを渡して skill の振り分けを求めたときに発動する。最初から宛先が明確なら triage を挟まず直接その skill を使う:『うちに取り込める?/CC 環境よくできる?』→[[cc-tune]]、『プレイブックに入れて/ai-team-playbook に反映』→[[playbook-sync]]、『分かりやすく解説して』→[[explain-article]]、『図解 HTML 教材にして』→[[doc-illustrate]]。"
+description: "リンク/記事の URL **またはセミナー・勉強会で学んだメモ / 貼り付けテキスト**を、宛先を指定せず渡されたとき、すぐに cc-tune や playbook-sync を発火させず、まず（URL なら）本文を生テキストで読んでから『どの skill が有効か』を判定して理由つきで提案し、判断をユーザーに委ねるトリアージ skill。入力は URL でもメモでも受ける。判定の選択肢は 自分の CC 環境改善=cc-tune / チーム規範 repo 反映=playbook-sync / 中身を解説するだけ=explain-article / 図解 HTML 教材=doc-illustrate / どれも不要(素の Claude)。自分では診断・取り込み・書き込みをせず、承認後に選ばれた skill へ橋渡しするだけ。ユーザーが「このリンクどっちの skill がいい?」「読んでから判断して」「これ cc-tune? playbook-sync?」「宛先は任せる、まず読んで決めて」「このセミナーのメモ、どの skill で扱うのがいい?」などと、宛先を決めずにリンク/記事/メモを渡して skill の振り分けを求めたときに発動する。**振り分けを明示的に頼まれていなくても、宛先を指定せず素のリンク/メモを最小限の言葉(『この記事よんで』『これ読んで/見て』『ちょっと見て』『共有』など)で渡され、かつ内容が CC / AI / 開発ツール寄りなら、まず triage を通す**(『よんで』だけで explain-article や素の Claude に直行しない。Claude Code / AI コーディング系の URL は特に triage 対象)。最初から宛先が明確なら triage を挟まず直接その skill を使う:『うちに取り込める?/CC 環境よくできる?』→[[cc-tune]]、『プレイブックに入れて/ai-team-playbook に反映』→[[playbook-sync]]、**明示的に**『深掘りして解説して/噛み砕いて説明して』と解説を求められた時のみ→[[explain-article]]、『図解 HTML 教材にして』→[[doc-illustrate]]。"
 allowed-tools: Read, Bash(python3:*), Bash(curl:*)
 ---
 
@@ -11,10 +11,11 @@ allowed-tools: Read, Bash(python3:*), Bash(curl:*)
 ## いつ使うか / 使わないか
 
 - **使う**: 宛先（自分の CC 環境 or チーム repo）を指定せず素のリンク or メモ/貼り付けテキストを渡された / 「どっちの skill がいい?」「読んでから判断して」「これ cc-tune? playbook-sync?」と振り分けを委ねられた。
+  - **振り分けを明示的に頼まれなくても**、宛先未指定の素のリンク/メモを最小限の言葉（「この記事よんで」「これ読んで/見て」「ちょっと見て」「共有」）で渡され、内容が **CC / AI / 開発ツール寄り**（Claude Code 系 URL は特に）なら、まず triage を通す。「よんで」だけで explain-article や素の Claude に直行しない。
 - **使わない（明示の宛先がある時は triage を挟まず直接その skill へ）**:
   - 「うちに取り込める? / CC 環境よくできる?」→ [[cc-tune]]
   - 「プレイブックに入れて / ai-team-playbook に反映」→ [[playbook-sync]]
-  - 「分かりやすく解説して」→ [[explain-article]]
+  - **明示的に**「深掘りして解説して / 噛み砕いて説明して」→ [[explain-article]]（bare な「よんで」は triage 側）
   - 「図解 HTML 教材にして」→ [[doc-illustrate]]
 
 ## ワークフロー

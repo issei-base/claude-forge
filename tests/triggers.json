@@ -66,6 +66,7 @@
 
     { "query": "このリンク、まず読んで cc-tune か playbook-sync かどっちの skill がいいか判断して: https://zenn.dev/foo/articles/triage", "expect": "link-triage" },
     { "query": "宛先は任せるから、この記事を読んでどの skill で扱うか決めて: https://qiita.com/x/items/z", "expect": "link-triage" },
+    { "query": "この記事よんで https://code.claude.com/docs/en/llm-gateway", "expect": "link-triage" },
 
     { "query": "このメモを Marp で発表スライドにして PDF で書き出して", "expect": "make-slides" },
     { "query": "この設計書を登壇用のスライドに組んで PPTX で欲しい", "expect": "make-slides" },
