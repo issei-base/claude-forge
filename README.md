@@ -230,6 +230,16 @@ flowchart TB
     MKD -. 事実検証 .-> FCK
 ```
 
+## 発火のしくみ（何がキッカケで動くか）
+
+skill と agent では「動き出すキッカケ」が違う。
+
+- **skill（自動発火する）** — あなたの**自然文メッセージが SKILL.md の `description`（下表「発動するフレーズ」）に一致**すると、Claude が自動で選んで発火する。明示したいときは `/skill-name`。`description` に並べた具体フレーズが事実上のトリガなので、発動させたい言い回しをそこに書いてある。
+  - 例外: `disable-model-invocation: true` を付けた skill は**自動発火せず `/skill-name` でのみ**起動する（誤発火が致命的な副作用 skill 向け。現状この設定の skill は無い）。
+- **agent（自動発火しない）** — メインの Claude が**タスクを agent の `description` に照らして委譲**する／`@agent-name` で**明示呼び**する／**skill が `Agent` tool 経由で**呼ぶ、のいずれか。会話の流れだけでは起動しない。
+
+> まとめ: skill は「あなたの言葉が description に一致 → 自動発火（＋ `/name`）」、agent は「委譲 or `@name`（会話では自動発火しない）」。各 skill の具体トリガは下の「現在の skill」表、各 agent は「現在の agent」表の『いつ呼ばれる』列を参照。
+
 ## 現在の skill
 
 description で自動発火 (model-invoked)。明示的に呼びたい時は `/skill-name` でも可。
