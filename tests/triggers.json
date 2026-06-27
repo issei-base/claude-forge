@@ -1,5 +1,5 @@
 {
-  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-article vs doc-illustrate, explain-article vs cc-article = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3).",
+  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3).",
   "cases": [
     { "query": "S3 bucket の権限ってどう設計するのがベストプラクティス？", "expect": "aws-advisor" },
     { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
@@ -12,7 +12,7 @@
     { "query": "いま話した内容をタスクの Issue にまとめて作って", "expect": "create-issue" },
     { "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて", "expect": "install-pr-reviews" },
     { "query": "私の興味プロファイルを会話履歴から更新して", "expect": "interest-profile" },
-    { "query": "この Zenn の Claude Code 記事、うちのリポジトリに採用できるか見て要約して: https://zenn.dev/foo/articles/bar", "expect": "cc-article" },
+    { "query": "この Zenn の Claude Code 記事、うちのリポジトリに採用できるか見て要約して: https://zenn.dev/foo/articles/bar", "expect": "cc-tune" },
     { "query": "この変更を ship して", "expect": "ship" },
     { "query": "受講生のこのシートの6回目の課題に ALB のハンズオンを出して書き込んで: https://docs.google.com/spreadsheets/d/1AbCdEfExampleSheetId0123456789/edit?gid=0", "expect": "make-kadai" },
     { "query": "ディスクの空きが少ないから、不要なキャッシュやビルド成果物を調査して安全に削除して", "expect": "storage-cleanup" },
@@ -28,9 +28,9 @@
     { "query": "ありがとう、すごく助かったよ", "expect": "NONE" },
 
     { "query": "Claude の公式ドキュメントのこのページを図解でわかりやすくまとめて受講生用 HTML に: https://docs.claude.com/en/docs/agents", "expect": "doc-illustrate" },
-    { "query": "この Qiita の Claude Code 記事、うちの claude-forge に取り込めるか診断して: https://qiita.com/x/items/y", "expect": "cc-article" },
-    { "query": "この Zenn 記事のやり方、うちの Claude Code 環境よくできるか見て: https://zenn.dev/foo/articles/baz", "expect": "cc-article" },
-    { "query": "この記事の手法で、うちの既存 skill を改善・育てられないか診断して: https://zenn.dev/foo/articles/qux", "expect": "cc-article" },
+    { "query": "この Qiita の Claude Code 記事、うちの claude-forge に取り込めるか診断して: https://qiita.com/x/items/y", "expect": "cc-tune" },
+    { "query": "この Zenn 記事のやり方、うちの Claude Code 環境よくできるか見て: https://zenn.dev/foo/articles/baz", "expect": "cc-tune" },
+    { "query": "この記事の手法で、うちの既存 skill を改善・育てられないか診断して: https://zenn.dev/foo/articles/qux", "expect": "cc-tune" },
     { "query": "変更をコミットして PR 出して", "expect": "ship" },
     { "query": "/create-pr でこの変更を PR にして", "expect": "create-pr" },
     { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
@@ -38,7 +38,7 @@
     { "query": "この Zenn 記事をざっと要約して: https://zenn.dev/foo/articles/bar", "expect": "NONE" },
     { "query": "この React の技術記事、背景から要点まで深掘りして分かりやすく説明して: https://example.com/react-suspense", "expect": "explain-article" },
     { "query": "この Claude Code の Zenn 記事、中身をわかりやすく噛み砕いて解説して: https://zenn.dev/foo/articles/cc-explain", "expect": "explain-article" },
-    { "query": "この Claude Code の Zenn 記事、うちの環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc-adopt", "expect": "cc-article" },
+    { "query": "この Claude Code の Zenn 記事、うちの環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc-adopt", "expect": "cc-tune" },
     { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-secondopinion" },
     { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" },
     { "query": "S3 のストレージコストが高いので最適化したい、ライフサイクル設計を見て", "expect": "aws-advisor" },
@@ -59,10 +59,12 @@
 
     { "query": "このガードレールの記事をチームの AI 活用プレイブックに取り込んで反映して: https://example.com/guardrails", "expect": "playbook-sync" },
     { "query": "この内容を ai-team-playbook の該当テーマに蒸留してまとめて入れて", "expect": "playbook-sync" },
-    { "query": "この Claude Code の記事、うちの CC 環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc", "expect": "cc-article" },
+    { "query": "この Claude Code の記事、うちの CC 環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc", "expect": "cc-tune" },
+    { "query": "今日のセミナーで学んだ Claude Code の運用メモ、うちの CC 環境に活かせるか診断して。subagent を並列で回す/hook で lint を強制する/statusLine にコスト表示", "expect": "cc-tune" },
+    { "query": "勉強会で聞いた AI 活用のこの話、チームのプレイブックに足せるか見て: 権限は最小から始めて段階的に広げる、機密は送信前に必ずマスクする", "expect": "playbook-sync" },
     { "query": "このチーム運用の記事をわかりやすく解説して。プレイブックには入れなくていい: https://example.com/ops", "expect": "explain-article" },
 
-    { "query": "このリンク、まず読んで cc-article か playbook-sync かどっちの skill がいいか判断して: https://zenn.dev/foo/articles/triage", "expect": "link-triage" },
+    { "query": "このリンク、まず読んで cc-tune か playbook-sync かどっちの skill がいいか判断して: https://zenn.dev/foo/articles/triage", "expect": "link-triage" },
     { "query": "宛先は任せるから、この記事を読んでどの skill で扱うか決めて: https://qiita.com/x/items/z", "expect": "link-triage" }
   ]
 }
