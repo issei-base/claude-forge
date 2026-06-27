@@ -1,6 +1,6 @@
 ---
 name: skill-reflect
-description: "Claude Code のセッションログ (jsonl) から claude-forge の自スキルが「不発・空振り・誤発火・出力をユーザーに大幅修正された」signal を拾い、該当 SKILL.md の改善案を出す skill。「最近のセッションでうちのスキルが空振りした所を拾って改善案を出して」「セッションログから skill の不発を検出して直す案を」「自分のスキルを自己改善して」「skill-reflect」「/skill-reflect」などで発動する。外部記事からの採用診断は [[cc-article]]、新規スキルの作成は skill-creator、定量の発火回数は usage dashboard を使う。改善案を出すだけで自分ではコミットしない（適用は承認後に [[ship]] へ委譲）。単に新しいスキルを作りたいだけ・コードのバグレビューだけなら使わない。"
+description: "Claude Code のセッションログ (jsonl) から claude-forge の自スキルが「不発・空振り・誤発火・出力をユーザーに大幅修正された」signal を拾い、該当 SKILL.md の改善案を出す skill。「最近のセッションでうちのスキルが空振りした所を拾って改善案を出して」「セッションログから skill の不発を検出して直す案を」「自分のスキルを自己改善して」「skill-reflect」「/skill-reflect」などで発動する。外部記事からの採用診断は [[cc-tune]]、新規スキルの作成は skill-creator、定量の発火回数は usage dashboard を使う。改善案を出すだけで自分ではコミットしない（適用は承認後に [[ship]] へ委譲）。単に新しいスキルを作りたいだけ・コードのバグレビューだけなら使わない。"
 allowed-tools: Read, Edit, Glob, Grep, Bash(ls:*), Bash(jq:*), Bash(grep:*)
 ---
 
@@ -8,9 +8,9 @@ allowed-tools: Read, Edit, Glob, Grep, Bash(ls:*), Bash(jq:*), Bash(grep:*)
 
 claude-forge の skill が実運用で「思ったように効かなかった」箇所を、**自分の Claude Code セッションログ (jsonl) から拾い上げ**、該当 `SKILL.md` への**具体的な改善案**に変換する skill。
 
-成果物は **改善案（signal → 該当 skill → 直す SKILL.md と差分案 → 確信度）**。記事の採用診断 ([[cc-article]]) の「自分のスキル版」にあたる。**この skill 自身はコミット・PR をしない** — 適用は承認を取ってから [[ship]] に渡す。
+成果物は **改善案（signal → 該当 skill → 直す SKILL.md と差分案 → 確信度）**。記事の採用診断 ([[cc-tune]]) の「自分のスキル版」にあたる。**この skill 自身はコミット・PR をしない** — 適用は承認を取ってから [[ship]] に渡す。
 
-> **境界**: 発火回数の**定量**観測は usage dashboard（claude-forge/tools の observability sink）の仕事。skill-reflect は**定性** — 「なぜ空振ったか／何を直せば効くか」を会話から読む。新規スキルを作るのは `skill-creator`。外部記事を採用できるか診断するのは [[cc-article]]。
+> **境界**: 発火回数の**定量**観測は usage dashboard（claude-forge/tools の observability sink）の仕事。skill-reflect は**定性** — 「なぜ空振ったか／何を直せば効くか」を会話から読む。新規スキルを作るのは `skill-creator`。外部記事を採用できるか診断するのは [[cc-tune]]。
 
 ## 重要: 非破壊・leak ガードの原則
 
@@ -131,4 +131,4 @@ bash .claude/skills/skill-reflect/scripts/install-cron.sh --uninstall           
 
 - skill の品質ループの「定性」担当。`tests/`（lint + 発火 eval）と usage dashboard（定量）の上に乗る改善提案レイヤー。
 - 無人で回したい場合は `schedule` skill / Routines から `/skill-reflect` を叩き、自律実行ルールに従って Issue 化する（適用は人間ゲート）。
-- 新規スキルが要ると分かったら `skill-creator`、外部記事の採用検討は [[cc-article]]、適用後の PR は [[ship]]。
+- 新規スキルが要ると分かったら `skill-creator`、外部記事の採用検討は [[cc-tune]]、適用後の PR は [[ship]]。
