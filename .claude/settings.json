@@ -20,6 +20,7 @@
       "Bash(gws auth status:*)",
       "Bash(which:*)",
       "Bash(gemini:*)",
+      "Bash(marp:*)",
       "Bash(printenv:*)"
     ],
     "deny": [
