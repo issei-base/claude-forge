@@ -2,7 +2,7 @@
 name: leak-auditor
 description: コミット対象の差分・ファイルを、claude-forge の「コミットしないもの」(secret/API キー・絶対パス・受講生の個人情報・非公開 URL・個人 MCP の vault パス・生成物・*.local.*) の観点で監査する専門 agent。漏洩は偽陰性のコストが高いので、secret/個人情報/非公開 URL は確信度が中 (50+) でも「疑わしきは報告」に倒し (明確な絶対パス・生成物は 70+)、各検出に「本来の置き場所」(env / settings.local.json / ~/.claude / gitignore / 削除) を添えて返す。secret 値そのものはマスクして出力に残さない。コードは変更しない。ship / commit する前、外部に出す資料を作った後に積極的に使う。「漏洩チェックして」「commit 前に secret 混入見て」「個人情報入ってないか監査して」「これ公開して大丈夫か」など。SKILL.md の craft レビューは skill-reviewer、実装コードの汎用レビューは doc-impl-reviewer を使う。
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 color: yellow
 ---
 

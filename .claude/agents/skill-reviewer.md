@@ -2,7 +2,7 @@
 name: skill-reviewer
 description: claude-forge の SKILL.md を、repo 固有の craft 規約に照らして厳格にレビューする専門 agent。決定的 lint (lint_skills.py の E1–E6 / W1–W3) が見られない「発火設計・断定の書き方・順序つき手順・重複/粒度・方針整合」の判断レイヤを確信度付きでチェックし、具体的な修正案を返す (SKILL.md は変更しない)。新規 skill を作った直後・既存 skill を直した後・ship する前に積極的に使う。「この skill レビューして」「SKILL.md の作法チェック」「発火精度を見て」「description が誤発火しないか」など。漏洩 (secret/絶対パス/個人情報) の監査は leak-auditor、汎用ドキュメントの品質レビューは doc-reviewer を使う。
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 color: green
 ---
 
