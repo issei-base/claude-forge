@@ -74,4 +74,3 @@ AWS / Anthropic の公式技術ページを、**手描き風の図解 HTML** に
 ## 関連
 
 - AWS の事実確認・一次ソース取得は [[aws-docs]] の原則を踏襲（read_documentation、逐語引用、出典必須）。
-- アーキテクチャの助言が要る話題なら [[aws-advisor]] が別途発動しうる。

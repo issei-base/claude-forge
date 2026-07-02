@@ -1,7 +1,6 @@
 {
   "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3).",
   "cases": [
-    { "query": "S3 bucket の権限ってどう設計するのがベストプラクティス？", "expect": "aws-advisor" },
     { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
     { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-secondopinion" },
     { "query": "この AWS の docs ページ、受講生用にわかりやすい図解 HTML にして", "expect": "doc-illustrate" },
@@ -16,12 +15,9 @@
     { "query": "この変更を ship して", "expect": "ship" },
     { "query": "受講生のこのシートの6回目の課題に ALB のハンズオンを出して書き込んで: https://docs.google.com/spreadsheets/d/1AbCdEfExampleSheetId0123456789/edit?gid=0", "expect": "make-kadai" },
     { "query": "ディスクの空きが少ないから、不要なキャッシュやビルド成果物を調査して安全に削除して", "expect": "storage-cleanup" },
-    { "query": "S3 のストレージコストが高いので保存クラスを見直して削減したい", "expect": "aws-advisor" },
     { "query": "~/Downloads/old.zip を1つ消しといて", "expect": "NONE" },
     { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
     { "query": "この会議の録音 ~/Downloads/mtg2026.m4a を文字起こしして要点をまとめて", "expect": "gemini-multimodal" },
-    { "query": "最近のセッションログから、うちのスキルが空振り・誤発火した所を拾って改善案を出して", "expect": "skill-reflect" },
-    { "query": "なんで user が undefined になるのか原因を調査して、再現から最小修正まで順番に進めて直して", "expect": "debug-issue" },
     { "query": "この記事の内容をわかりやすく噛み砕いて解説して。専門用語も説明して: https://zenn.dev/foo/articles/explain", "expect": "explain-article" },
     { "query": "今日の東京の天気どう？", "expect": "NONE" },
     { "query": "Python のリスト内包表記の書き方を教えて", "expect": "NONE" },
@@ -41,7 +37,6 @@
     { "query": "この Claude Code の Zenn 記事、うちの環境に取り込めるか診断して: https://zenn.dev/foo/articles/cc-adopt", "expect": "cc-tune" },
     { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-secondopinion" },
     { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" },
-    { "query": "S3 のストレージコストが高いので最適化したい、ライフサイクル設計を見て", "expect": "aws-advisor" },
     { "query": "認証方式は OAuth で行くと決めたので、第三者が実装できる粒度で実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/9", "expect": "plan-issue" },
     { "query": "この古い HTTP クライアントライブラリで HTTP/2 の要件を満たせるか、小さく試して採用可否を判断したい", "expect": "spike" },
     { "query": "この PR の落ちてる CI を直して: https://github.com/acme/app/pull/9", "expect": "fix-pr" },
@@ -53,7 +48,6 @@
     { "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて", "expect": "implement-issue" },
     { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" },
 
-    { "query": "自分の Claude Code のスキルを、最近のセッションの不発から自己改善して直す案を出して", "expect": "skill-reflect" },
     { "query": "新しいスキルをゼロから作って", "expect": "NONE" },
     { "query": "どの skill が何回発火したか回数を集計して見せて", "expect": "NONE" },
 

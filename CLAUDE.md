@@ -34,7 +34,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 - **`gh`/`git` 等の外部コマンドを叩く skill は `allowed-tools` で最小スコープを宣言**する (例: `create-issue` / `plan-issue` の frontmatter)。実際の権限ゲートは `.claude/settings.json` の allow-list + 対話承認 + ship の hard guard だが、SKILL.md 側にも宣言しておくと意図が明示され読み手にも優しい。
 - **SKILL.md の書き方 craft (model の遵守精度を上げる)**: 禁止/例外は「使うのは X のみ。通常は Y」と断定で書く (曖昧な「〜など」は AI が多用する・稀なものは全面禁止で矯正)。難判断は「A を見る→B と比べる→C を確認」の順序つき手順にする。重複を書かず粒度を揃える。lookup 参照は `references/` に種別分割し、横断ルールは `_shared/` に集約。詳細は `_template/SKILL.md.tmpl` の「書き方の作法」。
 - **SKILL.md を編集したターンは Stop hook (`skill-lint.py`) が `tests/lint_skills.py` を強制**する。`name`↔dir ズレ・description 欠落・名前重複・SKILL.md 欠落ディレクトリ (E6) があるとターンが止まる。同じ lint は CI (`.github/workflows/skill-lint.yml`) でも `--strict` で走る多層防御 (Stop hook はローカル限定)。意図的にスキップしたい時だけ環境変数 `SKILL_LINT_HOOK=0`。
-- **正確さが要る skill** (`aws-docs` / `aws-advisor` / `doc-illustrate`) は、記憶ではなく一次ソースから答える。数値・価格・上限・コマンド構文は逐語引用し、出典を残す。Web 取得は要約モデルを挟まない生テキスト優先 (`curl`、docs は `.md`、AWS は `aws` MCP)。
+- **正確さが要る skill** (`aws-docs` / `doc-illustrate`) は、記憶ではなく一次ソースから答える。数値・価格・上限・コマンド構文は逐語引用し、出典を残す。Web 取得は要約モデルを挟まない生テキスト優先 (`curl`、docs は `.md`、AWS は `aws` MCP)。
 - **コミットしないもの**: `.claude/settings.local.json` / `*.local.*`、secrets (API key・token)、個人 MCP の vault/絶対パス、`summaries/` / `INTERESTS.md` / `data/` の生成物、受講生の個人情報や非公開 URL。
 - README に skill を 1 行追記する (新しい skill を足したら「現在の skill」表を更新)。
 
