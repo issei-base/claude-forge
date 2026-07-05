@@ -65,6 +65,10 @@
     { "query": "このメモを Marp で発表スライドにして PDF で書き出して", "expect": "make-slides" },
     { "query": "この設計書を登壇用のスライドに組んで PPTX で欲しい", "expect": "make-slides" },
     { "query": "この箇条書き、プレゼン資料のスライドにして", "expect": "make-slides" },
-    { "query": "この AWS の docs を1枚もので見て分かる図解 HTML 教材にして", "expect": "doc-illustrate" }
+    { "query": "この AWS の docs を1枚もので見て分かる図解 HTML 教材にして", "expect": "doc-illustrate" },
+
+    { "query": "この通知機能、伴走しながら一緒に作ろう。勝手に完走せず要所で相談して、私も理解しながら進めたい", "expect": "banso" },
+    { "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて", "expect": "banso" },
+    { "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて", "expect": "implement-issue" }
   ]
 }
