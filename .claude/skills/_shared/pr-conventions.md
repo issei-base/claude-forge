@@ -1,9 +1,9 @@
 # PR / Issue 共通コンベンション (claude-forge)
 
-`create-pr` / `fix-pr` / `create-issue` / `plan-issue` / `implement-issue` が共有する
-方針。**方針変更はこの 1 ファイルで行い**、各 SKILL.md はここを参照する（同じ内容を
-5 つの SKILL.md にコピペしてドリフトさせない、が狙い）。`_` 始まりなので lint /
-install / 発火の対象外。
+`ship` / `create-pr` / `fix-pr` / `create-issue` / `plan-issue` / `implement-issue` が
+共有する方針。**方針変更はこの 1 ファイルで行い**、各 SKILL.md はここを参照する
+（同じ内容を 6 つの SKILL.md にコピペしてドリフトさせない、が狙い）。`_` 始まりなので
+lint / install / 発火の対象外。
 
 > **読み方**: 各 skill はこのファイルを `Read` で開いて従う。原本の絶対パスは
 > `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`
