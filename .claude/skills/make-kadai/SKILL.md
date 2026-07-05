@@ -2,6 +2,7 @@
 name: make-kadai
 description: 受講生のカリキュラムシート（Google スプレッドシート）の URL とテーマ（例: ALB / S3 / CloudFront）を渡すと、既存の課題欄フォーマットを読み取り、同じ書式でそのテーマのハンズオン課題を生成して「次回までの宿題（課題欄）」の該当レッスン列に Sheets API で自動書き込みする。ユーザーが「受講生のシートの6回目の課題にALBのハンズオンを出して」「次回の宿題を作って書き込んで」「<スプレッドシートURL> の課題欄に <テーマ> の課題を入れて」「学習報告シートに課題を自動で書いて」などと、受講生シートの課題欄へ課題を作成・記入したい意図を示したときに発動する。AWS テーマの手順は記憶で書かず [[aws-docs]] で一次ソースに当てる。図解の HTML 教材が欲しいだけでシートに書かないなら [[doc-illustrate]] を使う。単に AWS サービスの説明が欲しいだけ・シートを編集しないなら使わない。
 allowed-tools: Read, Write, Skill, Bash(python3:*), Bash(gws auth status:*), Bash(gws sheets:*)
+disable-model-invocation: true
 ---
 
 # make-kadai
