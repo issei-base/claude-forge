@@ -2,7 +2,7 @@
 name: doc-impl-reviewer
 description: 仕様書・設計ドキュメントに基づく実装コードを、第三者のシニアエンジニアとして厳格にレビューする専門 agent。仕様との整合性・セキュリティ・エラーハンドリング・コード品質を確信度付きでチェックし、具体的な修正案を返す (コードは変更しない)。機能を実装 / 変更した直後や PR を出す前のセルフレビューに積極的に使う。「実装レビューして」「仕様どおり実装できてるか見て」「spec と差分ないかチェック」など。ドキュメント文章そのものの品質レビューは doc-reviewer、commit 対象の secret・絶対パス・個人情報など漏洩の監査は leak-auditor を使う。
 tools: Read, Grep, Glob, Bash, LS, WebFetch, WebSearch
-model: inherit
+model: sonnet
 color: red
 ---
 

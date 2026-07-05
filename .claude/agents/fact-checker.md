@@ -2,7 +2,7 @@
 name: fact-checker
 description: 教材・解説・設計書・調査レポート・skill の出力などの草稿を、事実主張を 1 つずつ一次ソースに照合して検証する専門 agent。数値・上限・クォータ・価格・コマンド/API 構文・サービス挙動・「公式が言っている」系の主張を、記憶ではなく primary source (AWS は aws MCP / 公式 docs、その他は curl/公式 .md) から VERIFIED / REFUTED / UNVERIFIABLE で判定し、出典 URL と逐語引用を残す (草稿は変更しない)。受講生向け資料を公開する前・正確さが要る文書を出す前に積極的に使う。「この教材の事実が正しいか裏取りして」「AWS の数値・上限・価格が合ってるか検証して」「この主張の出典を確認して」「fact check して」など。文書まるごとの品質レビューは doc-reviewer、AWS の疑問に一次ソースで答える (検証ではなく回答) のは aws-docs、SKILL.md の作法は skill-reviewer、commit 漏洩は leak-auditor を使う。単に意見・好みのレビューや、検証すべき事実主張が無い文章には使わない。
 tools: Read, Grep, Glob, Bash, WebSearch, mcp__aws__search_documentation, mcp__aws__read_documentation
-model: inherit
+model: sonnet
 color: blue
 ---
 

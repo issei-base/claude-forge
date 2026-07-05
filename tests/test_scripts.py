@@ -195,6 +195,42 @@ class TestGitPushGuard(unittest.TestCase):
         ]:
             self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
 
+    def test_denies_wrapped_and_quoted_variants(self):
+        # 2026-07 の監査で実測されたすり抜けパターン群。ラッパ・サブシェルの
+        # 括弧・クォートされた ref・shell -c・リダイレクトを全て検知する。
+        for cmd in [
+            "(cd /tmp/x && git push origin main)",
+            "true && (git push origin main)",
+            "env git push origin main",
+            "env -u GIT_DIR git push origin main",
+            "time git push origin main",
+            "timeout 60 git push origin main",
+            'git push origin "main"',
+            "git push origin 'main'",
+            'bash -c "git push origin main"',
+            "sh -c 'git push origin master'",
+            "\\git push origin main",
+            "git push origin main >/tmp/push.log 2>&1",
+        ]:
+            self.assertTrue(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_allows_wrapped_non_protected(self):
+        # ラッパ・シェル経由でも、宛先が保護ブランチでなければ deny しない。
+        for cmd in [
+            "env git push origin feature/x",
+            "timeout 60 git push origin HEAD",
+            "bash -c 'git push origin develop'",
+            "time git status",
+        ]:
+            self.assertFalse(gpg.is_push_to_protected(cmd), cmd)
+
+    def test_fail_closed_on_operator_inside_quotes(self):
+        # クォート文字列の中に制御演算子ごと push コマンドが埋まっている場合は
+        # 誤 deny を許容する (fail-closed の設計方針。docstring 参照)。この挙動が
+        # 変わったら意図的な設計変更なのでテストも一緒に見直すこと。
+        self.assertTrue(gpg.is_push_to_protected(
+            'git commit -m "x && git push origin main"'))
+
 
 if __name__ == "__main__":
     unittest.main()

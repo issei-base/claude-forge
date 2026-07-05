@@ -15,6 +15,7 @@ set -euo pipefail
 
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
+CONFLICTS=0
 
 # Resolve the repo root from this script's real location (works via symlink too).
 SOURCE="${BASH_SOURCE[0]}"
@@ -32,6 +33,16 @@ AGENTS_DST="$HOME/.claude/agents"
 
 link() {  # link <src> <dst>
   local src="$1" dst="$2"
+  # 宛先が「symlink でない実ディレクトリ/ファイル」のとき、ln -sfn はそれを
+  # 置き換えずに *中に* ネスト symlink (dst/name → src) を作って成功扱いに
+  # なってしまう。黙って壊れた状態を作らないよう、リンクせず conflict として
+  # 報告し、最後に非ゼロ終了する (実体の削除はユーザーに委ねる)。
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    echo "  [conflict] $(basename "$dst") — $dst は symlink でない実体。リンクせずスキップ" >&2
+    echo "             (中身を確認して退避/削除してから再実行: mv \"$dst\" \"$dst.bak\")" >&2
+    CONFLICTS=$((CONFLICTS + 1))
+    return 0
+  fi
   if [ "$DRY_RUN" = 1 ]; then
     echo "  would link $(basename "$dst")"
   else
@@ -59,5 +70,9 @@ for f in "$AGENTS_SRC"/*.md; do
   link "$f" "$AGENTS_DST/$(basename "$f")"
 done
 
+if [ "$CONFLICTS" -gt 0 ]; then
+  echo "error: $CONFLICTS 件の conflict をスキップした (上の [conflict] 行を参照)。" >&2
+  exit 1
+fi
 echo "done. user-scope skills inherit ~/.claude/settings.json permissions —"
 echo "add codex/gws/aws etc. there if you want them in every project."

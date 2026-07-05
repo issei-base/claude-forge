@@ -1,117 +1,37 @@
 {
   "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3).",
   "cases": [
-    {
-      "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？",
-      "expect": "aws-docs"
-    },
-    {
-      "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって",
-      "expect": "codex-secondopinion"
-    },
-    {
-      "query": "この設計ドキュメントを多観点でレビューして修正まで回して",
-      "expect": "doc-review"
-    },
-    {
-      "query": "https://github.com/acme/app/issues/42 を実装して PR まで出して",
-      "expect": "implement-issue"
-    },
-    {
-      "query": "https://github.com/acme/app/issues/42 の実装計画を立てて Issue にコメントして",
-      "expect": "plan-issue"
-    },
-    {
-      "query": "この PR のレビュー指摘に対応して直して: https://github.com/acme/app/pull/7",
-      "expect": "fix-pr"
-    },
-    {
-      "query": "いま話した内容をタスクの Issue にまとめて作って",
-      "expect": "create-issue"
-    },
-    {
-      "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて",
-      "expect": "install-pr-reviews"
-    },
-    {
-      "query": "この変更を ship して",
-      "expect": "ship"
-    },
-    {
-      "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して",
-      "expect": "spike"
-    },
-    {
-      "query": "今日の東京の天気どう？",
-      "expect": "NONE"
-    },
-    {
-      "query": "Python のリスト内包表記の書き方を教えて",
-      "expect": "NONE"
-    },
-    {
-      "query": "ありがとう、すごく助かったよ",
-      "expect": "NONE"
-    },
-    {
-      "query": "変更をコミットして PR 出して",
-      "expect": "ship"
-    },
-    {
-      "query": "/create-pr でこの変更を PR にして",
-      "expect": "create-pr"
-    },
-    {
-      "query": "コミットメッセージを確認しながら対話的に PR を出して",
-      "expect": "ship"
-    },
-    {
-      "query": "このドキュメント、1人でざっと軽くレビューだけして",
-      "expect": "NONE"
-    },
-    {
-      "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて",
-      "expect": "codex-secondopinion"
-    },
-    {
-      "query": "この差分を厳しめに批判的にレビューして設計の穴を探して",
-      "expect": "NONE"
-    },
-    {
-      "query": "認証方式は OAuth で行くと決めたので、第三者が実装できる粒度で実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/9",
-      "expect": "plan-issue"
-    },
-    {
-      "query": "この古い HTTP クライアントライブラリで HTTP/2 の要件を満たせるか、小さく試して採用可否を判断したい",
-      "expect": "spike"
-    },
-    {
-      "query": "この PR の落ちてる CI を直して: https://github.com/acme/app/pull/9",
-      "expect": "fix-pr"
-    },
-    {
-      "query": "このissueに着手して: https://github.com/acme/app/issues/55",
-      "expect": "implement-issue"
-    },
-    {
-      "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて",
-      "expect": "implement-issue"
-    },
-    {
-      "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77",
-      "expect": "plan-issue"
-    },
-    {
-      "query": "この通知機能、伴走しながら一緒に作ろう。勝手に完走せず要所で相談して、私も理解しながら進めたい",
-      "expect": "banso"
-    },
-    {
-      "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて",
-      "expect": "banso"
-    },
-    {
-      "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて",
-      "expect": "implement-issue"
-    }
+    { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
+    { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-secondopinion" },
+    { "query": "この設計ドキュメントを多観点でレビューして修正まで回して", "expect": "doc-review" },
+    { "query": "https://github.com/acme/app/issues/42 を実装して PR まで出して", "expect": "implement-issue" },
+    { "query": "https://github.com/acme/app/issues/42 の実装計画を立てて Issue にコメントして", "expect": "plan-issue" },
+    { "query": "この PR のレビュー指摘に対応して直して: https://github.com/acme/app/pull/7", "expect": "fix-pr" },
+    { "query": "いま話した内容をタスクの Issue にまとめて作って", "expect": "create-issue" },
+    { "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて", "expect": "install-pr-reviews" },
+    { "query": "この変更を ship して", "expect": "ship" },
+    { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
+    { "query": "今日の東京の天気どう？", "expect": "NONE" },
+    { "query": "Python のリスト内包表記の書き方を教えて", "expect": "NONE" },
+    { "query": "ありがとう、すごく助かったよ", "expect": "NONE" },
+
+    { "query": "変更をコミットして PR 出して", "expect": "ship" },
+    { "query": "/create-pr でこの変更を PR にして", "expect": "create-pr" },
+    { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
+    { "query": "このドキュメント、1人でざっと軽くレビューだけして", "expect": "NONE" },
+    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-secondopinion" },
+    { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" },
+    { "query": "認証方式は OAuth で行くと決めたので、第三者が実装できる粒度で実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/9", "expect": "plan-issue" },
+    { "query": "この古い HTTP クライアントライブラリで HTTP/2 の要件を満たせるか、小さく試して採用可否を判断したい", "expect": "spike" },
+    { "query": "この PR の落ちてる CI を直して: https://github.com/acme/app/pull/9", "expect": "fix-pr" },
+
+    { "query": "このissueに着手して: https://github.com/acme/app/issues/55", "expect": "implement-issue" },
+    { "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて", "expect": "implement-issue" },
+    { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" },
+
+    { "query": "この通知機能、伴走しながら一緒に作ろう。勝手に完走せず要所で相談して、私も理解しながら進めたい", "expect": "banso" },
+    { "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて", "expect": "banso" },
+    { "query": "https://github.com/acme/app/issues/88 に着手して。ただし要所で私に相談しながら一緒に進めて", "expect": "banso" },
+    { "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて", "expect": "implement-issue" }
   ]
 }
