@@ -10,11 +10,13 @@ on:
   pull_request:
     paths:
       - ".claude/skills/**"
+      - ".claude/hooks/**"
       - "tests/**"
   push:
     branches: [main]
     paths:
       - ".claude/skills/**"
+      - ".claude/hooks/**"
       - "tests/**"
 
 permissions:
@@ -37,3 +39,6 @@ jobs:
       # are errors too. Locally the Stop hook runs without --strict so a missing
       # fixture only warns and never blocks the turn.
       - run: python3 tests/lint_skills.py --strict
+      # Unit tests for the hooks (git-push-guard tokenizer) and skill scripts.
+      # Without this, a PR that breaks a hook triggers no CI at all.
+      - run: python3 tests/test_scripts.py
