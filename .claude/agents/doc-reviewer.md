@@ -2,7 +2,7 @@
 name: doc-reviewer
 description: 技術ドキュメントそのものを、扱う技術の専門家として厳格にレビューする専門 agent。技術的正確性・完全性・明確性・実用性・構成をチェックし、主張は公式ドキュメントで裏取りして改善案を返す。設計書・障害分析・運用手順・調査レポート・API 設計書・教材などを書いた直後や公開前のレビューに積極的に使う。「このドキュメントレビューして」「技術的に間違ってないか見て」「設計書の抜け漏れチェック」など。仕様に基づく実装コードのレビューは doc-impl-reviewer、claude-forge の SKILL.md の作法・発火設計のレビューは skill-reviewer、文書まるごとではなく事実主張だけを claim 単位で一次ソースに照合したいなら fact-checker を使う。
 tools: Read, Glob, Grep, WebSearch, WebFetch
-model: inherit
+model: sonnet
 color: cyan
 ---
 
