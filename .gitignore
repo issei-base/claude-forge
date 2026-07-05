@@ -9,6 +9,14 @@ node_modules/
 # (個人系 skill とその生成物・ローカル専用ツールは private repo claude-forge-personal へ分離済み。2026-07-06)
 .claude/data/
 
+# 安全網: 分離前の個人生成物の置き場。移行し損ねた古い checkout / 手元の残骸が
+# untracked になって `git add -A` 等で public repo に混入しないよう ignore を残す
+# (実体は claude-forge-personal 側へ移動済み。新規に生成されることはない)。
+tools/
+summaries/
+INTERESTS.md
+data/
+
 # Python（skill 同梱スクリプトの実行で出るキャッシュ）
 __pycache__/
 *.pyc
