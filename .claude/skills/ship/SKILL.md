@@ -104,6 +104,27 @@ git diff <base>...HEAD --name-only | grep -E '\.claude/skills/[^_/][^/]*/SKILL\.
 
 > lint の指摘（E1–E6/W1–W3）はこのゲートの対象外。それは Stop hook / CI が別途担保する。ここは「lint が見られない判断レイヤ」だけを見る。
 
+## 3.7 leak-auditor ゲート (漏洩リスクのある diff だけ・区切りで 1 回)
+
+§2/§3.5 の grep は「値の形が既知の secret」しか拾えない。**絶対パス・受講生の個人情報・非公開 URL・生成物の混入**は形が無く grep では見えないので、該当しやすい diff のときだけ `leak-auditor` agent（Agent tool）を 1 回通す。発火条件を厳密に判定する:
+
+```sh
+git diff <base>...HEAD --name-only --diff-filter=A   # (1) 新規追加ファイル
+git diff <base>...HEAD --name-only                   # (2) 対象パスの変更
+```
+
+- 次の**いずれか**に該当 → leak-auditor を 1 回回す（ship の区切りで 1 回・commit のたびではない）:
+  1. 新規追加ファイルがある（初出のファイルは混入リスクが最も高い）
+  2. 変更に設定・ドキュメント類が含まれる: `*.json` / `*.toml` / `*.yaml` / `*.yml` / `*.md` / `.claude/**` / `.env*` 類
+  3. §2/§3.5 のスキャンで「secret ではなさそうだが判断に迷った」ものが残っている
+- どれにも該当しない（既存コードファイルのみの小さな diff）→ スキップして §4 へ。
+- `leak-auditor` agent が無い repo（skill だけコピーした等）→ スキップして §4 へ。
+
+**検出の扱い**（§3.6 と同じ二分法）:
+- **secret / 個人情報 / 非公開 URL の検出** → 自走せず **STOP してユーザーに見せる**（マスク付きで）。
+- **絶対パス・生成物・`*.local.*` など機械的に直せるもの** → その場で直し、§3.5 の `git reset --soft HEAD~1` 手順で commit をやり直す（`--amend` は使わない）。
+- 誤検知と判断したもの → 理由を §6 報告に 1 行残す（黙って捨てない）。
+
 ## 4. Push (default branch への push は absolute STOP)
 
 ```sh
