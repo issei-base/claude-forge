@@ -1,7 +1,7 @@
 ---
 name: gemini-multimodal
-description: Gemini CLI を使って音声・動画・PDF・画像などマルチモーダルファイルを解析する skill。Claude 本体が処理できない音声・動画の文字起こし / 要約や、PDF・画像からの抽出を Gemini に委譲する。「この mp4 を要約して」「録音を文字起こしして」「動画の要点をタイムスタンプ付きで出して」「この音声ファイル何て言ってる?」「PDF から API 仕様を抽出して」「このスクショ解析して」「Gemini でこのファイル見て」などで発動する。音声・動画は Claude が扱えない本物の穴なので積極的に使う。Preflight で `which gemini` を確認し、Login with Google・API キー不使用 (従量課金回避) を必ず案内する。単なるテキスト / コードの要約は Claude で足りるので使わない。AWS docs の確認は [[aws-docs]]、ドキュメントを図解 HTML 教材に変換したいだけなら [[doc-illustrate]] を使う。
-allowed-tools: Read, Bash(which:*), Bash(gemini:*), Bash(printenv:*)
+description: Gemini CLI を使って音声・動画・PDF・画像などマルチモーダルファイルを解析する skill。Claude 本体が処理できない音声・動画の文字起こし / 要約や、PDF・画像からの抽出を Gemini に委譲する。「この mp4 を要約して」「録音を文字起こしして」「動画の要点をタイムスタンプ付きで出して」「この音声ファイル何て言ってる?」「PDF から API 仕様を抽出して」「このスクショ解析して」「Gemini でこのファイル見て」などで発動する。音声・動画は Claude が扱えない本物の穴なので積極的に使う。Preflight で `which gemini` と API キー認証 (`GEMINI_API_KEY` + `selectedType: gemini-api-key`) を確認する — 無料 OAuth (Login with Google) は廃止済みで、この環境は API キー運用が正。無料枠は flash 系モデルのみ。単なるテキスト / コードの要約は Claude で足りるので使わない。AWS docs の確認は [[aws-docs]]、ドキュメントを図解 HTML 教材に変換したいだけなら [[doc-illustrate]] を使う。
+allowed-tools: Read, Bash(which:*), Bash(gemini:*), Bash(printenv:*), Bash(cp:*)
 ---
 
 # gemini-multimodal
@@ -20,20 +20,25 @@ allowed-tools: Read, Bash(which:*), Bash(gemini:*), Bash(printenv:*)
 - `which gemini` が成功すること。失敗したら次を案内して STOP:
   ```sh
   npm install -g @google/gemini-cli
-  gemini login   # ブラウザで "Login with Google"
   ```
 
-### 2. 課金ガード (重要)
+### 2. 認証 (重要 — 2026-06 に前提が変わった)
 
-Gemini CLI は **認証方法で課金が変わる**。守るべきは 2 点:
+**無料の Login with Google (OAuth 個人枠) は廃止済み。** 旧構成で実行すると
+`IneligibleTierError: This client is no longer supported` で弾かれる。この環境の正は
+**API キー運用**。「API キーを外して OAuth に戻す」という旧案内は**しない**
+(正常な設定を壊す行為になる)。
 
-- **Login with Google で認証する。** 個人 Google アカウントの無料枠 (60 req/分・1,000 req/日) でも無課金。Google AI Pro / Ultra サブスクならさらに上限が上がり、いずれもサブスク / 無料枠内なら**追加料金なし**。
-- **`GEMINI_API_KEY` を使わない。** CLI は**サブスクよりも API キーの課金を優先する**ため、環境にキーがあると従量課金 (AI Studio・有料枠は請求先リンク + 最低 $10 前払い) に落ちる。
-  - `printenv GEMINI_API_KEY` で確認する。**値が出たら**ユーザーに「このまま実行すると API 従量課金になる」と警告し、サブスク枠で回したいなら当該コマンドだけ環境変数を外して実行する:
-    ```sh
-    env -u GEMINI_API_KEY gemini -p "..." 2>&1
-    ```
-  - 出典 (公式・要点): [Gemini CLI authentication](https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/authentication.mdx) —「有料サブスクなら API キーは不要、外せばアカウントのサブスク枠で直接認証する」。
+- 現行の正しい構成 (このマシンは設定済み):
+  1. [AI Studio](https://aistudio.google.com/apikey) で無料 API キーを発行し、`GEMINI_API_KEY` を環境に置く
+  2. `~/.gemini/settings.json` の `security.auth.selectedType` を `gemini-api-key` にする
+     (キーがあっても `selectedType` が oauth のままだと OAuth を見にいって弾かれる)
+- Preflight 確認は 2 つ: ① `printenv GEMINI_API_KEY` に値があること (**無ければ**上記 1→2 を案内して STOP)。② `~/.gemini/settings.json` の `security.auth.selectedType` が `gemini-api-key` であること (`oauth-personal` のままなら書き換えを案内して STOP)。実行時に `IneligibleTierError` が出たら②の確認漏れを疑う。
+- **無料枠で使えるのは flash 系のみ** (`gemini-2.5-flash` 等)。pro 系は billing 必須で
+  `Error when talking to Gemini API` になる。認証は正しいのにモデル起因のエラーが出たら
+  `-m gemini-2.5-flash` を明示して再実行する。
+- レート上限・課金の現行値は変わりうるので、必要になったら AI Studio の rate limits ページで
+  確認する (記憶で数値を答えない)。
 
 ### 3. ファイルの存在と場所
 
@@ -78,7 +83,7 @@ gemini -p "Describe what this screenshot shows and any visible errors @shot.png"
 
 - **Gemini の出力をそのまま見せる。** 文字起こしは逐語、要約は要約として提示する。Claude による二次要約で潰さない。
 - ユーザーの依頼に応じてプロンプトを調整する (「タイムスタンプ付きで」「英語で」「箇条書きで」等)。
-- 無料枠は 1,000 req/日。バッチで上限に当たりそうなら一言添える (サブスク枠内なら限界費用ゼロ)。
+- 大量バッチで無料枠の上限 (429 / quota エラー) に当たったら、その旨と AI Studio の rate limits ページを添えて報告する。
 
 ## スコープ外
 

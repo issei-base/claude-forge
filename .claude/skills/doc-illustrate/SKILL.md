@@ -1,6 +1,6 @@
 ---
 name: doc-illustrate
-description: AWS / Claude (Anthropic) の公式技術ページの URL を渡すと、その内容を読み解いて「図解付き・手描き風の分かりやすい 1 枚もの HTML」に要約・変換し、~/Downloads に保存して自動でブラウザで開く。原典の分類・関係・流れは必ず図解に起こして補足する。自分の学習用、または受講生への説明資料として使う。ユーザーが「このページ図解にして」「<URL> をわかりやすくまとめて」「受講生用に HTML にして」「解説資料/説明スライド作って」「AWS の docs を図解で」「Claude のドキュメント分かりやすく要約して」「visual にして」などと、技術ドキュメントの URL を噛み砕いたビジュアル資料化を求めたときに発動する。単なるテキスト要約ではなく「見て分かる HTML 教材」が欲しいニュアンスがあれば積極的に使う。Claude Code 系の記事を要約して claude-forge に採用できるか診断したいだけなら [[cc-tune]] を使う。
+description: AWS / Claude (Anthropic) の公式技術ページの URL を渡すと、その内容を読み解いて「図解付き・手描き風の分かりやすい 1 枚もの HTML」に要約・変換し、~/Downloads に保存して自動でブラウザで開く。原典の分類・関係・流れは必ず図解に起こして補足する。自分の学習用、または受講生への説明資料として使う。ユーザーが「このページ図解にして」「<URL> をわかりやすくまとめて」「受講生用に HTML にして」「図解の解説資料作って」「AWS の docs を図解で」「Claude のドキュメント分かりやすく要約して」「visual にして」などと、技術ドキュメントの URL を噛み砕いたビジュアル資料化を求めたときに発動する。単なるテキスト要約ではなく「見て分かる 1 枚もの HTML 教材」が欲しいニュアンスがあれば積極的に使う。「スライドにして」「プレゼン資料に」「発表用に」など複数ページのスライドを求められたら [[make-slides]] を使う (doc-illustrate は発表しない閲覧用の 1 枚もの)。Claude Code 系の記事を要約して claude-forge に採用できるか診断したいだけなら [[cc-tune]] を使う。
 allowed-tools: Read, Write, Edit, Glob, Grep, Skill, WebFetch, Bash(python3:*), Bash(curl:*), Bash(cp:*), Bash(mkdir:*), Bash(open:*), Bash(xdg-open:*), Bash(grep:*), mcp__aws__search_documentation, mcp__aws__read_documentation
 ---
 
