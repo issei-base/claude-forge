@@ -5,33 +5,17 @@ node_modules/
 .env
 .env.*
 
-# ローカル専用ツール置き場。public repo には絶対に出さない (ローカル稼働のみ):
-#   - 外部 OSS ツール (Claude Code Usage Dashboard): サードパーティのコード + 個人の
-#     利用データ (メール・全プロジェクトパス・トークン量を含む SQLite) を持つ。
-#   - ohayou (個人用の朝のレッスン LINE 通知): 旧「おはよう」skill は廃止し、いまは
-#     launchd cron 専用スクリプト (detect_lessons / line_notify / morning_lesson_notify)
-#     だけが残る。受講生名・パートナー名を含む。元 .claude/skills/ohayou/ から tools/ へ移設。
-tools/
-
-# doc-illustrate が生成する HTML 要約。claude-forge は public repo なので
-# 追跡しない（ローカル保管のみ）。出力先はプロジェクト直下 summaries/。
-summaries/
-
-# interest-profile の生成物。会話の抜粋（個人の興味の中身）を含むため、
-# public repo には絶対に出さない（スキルのコードだけ公開し、プロファイルは非公開）。
-INTERESTS.md
-
-# data/ は skill の実行時生成物の置き場 (各 skill の投稿ログ/dedup/キュー、
-# interest-profile、ohayou の各種 state、LINE/X キャッシュ等)。いずれも個人データを
-# 含むかマシンローカルで churn するだけなので、.gitkeep 以外は丸ごと追跡しない。
-# 個別列挙ではなく総称ルールにすることで、将来 skill が新しいログ名で吐いても
-# 取りこぼさない (CLAUDE.md「data/ の生成物はコミットしない」を構造で担保)。
-data/*
-!data/.gitkeep
-
-# backstop: skill スクリプトの生成物は repo-root の data/ に出す前提だが、
-# パス解決のズレ等で .claude/ 配下に落ちても個人データが漏れないよう丸ごと無視。
+# backstop: skill スクリプトの生成物が .claude/ 配下に落ちても個人データが漏れないよう丸ごと無視。
+# (個人系 skill とその生成物・ローカル専用ツールは private repo claude-forge-personal へ分離済み。2026-07-06)
 .claude/data/
+
+# 安全網: 分離前の個人生成物の置き場。移行し損ねた古い checkout / 手元の残骸が
+# untracked になって `git add -A` 等で public repo に混入しないよう ignore を残す
+# (実体は claude-forge-personal 側へ移動済み。新規に生成されることはない)。
+tools/
+summaries/
+INTERESTS.md
+data/
 
 # Python（skill 同梱スクリプトの実行で出るキャッシュ）
 __pycache__/

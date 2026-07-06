@@ -17,11 +17,7 @@
     "allow": [
       "Bash(codex review:*)",
       "Bash(codex exec:*)",
-      "Bash(gws sheets:*)",
-      "Bash(gws auth status:*)",
       "Bash(which:*)",
-      "Bash(gemini:*)",
-      "Bash(marp:*)",
       "Bash(printenv:*)"
     ],
     "deny": [

@@ -6,8 +6,7 @@
 # Idempotent: re-run any time. Uses `ln -sfn`, so it refreshes stale links and is
 # safe to run after adding a skill. Skips scaffold/retired dirs:
 #   - names starting with `_` or `.` (e.g. `_template`)
-#   - any dir without a SKILL.md (e.g. `ohayou`, a retired skill kept only for a
-#     local cron — it is .gitignored and must not be globally linked)
+#   - any dir without a SKILL.md
 #
 # Usage:
 #   ./install.sh            # link skills + agents into ~/.claude
