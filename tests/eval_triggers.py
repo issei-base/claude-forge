@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -61,7 +62,12 @@ def ask_claude(prompt: str, model: str | None) -> str:
     cmd = ["claude", "-p", prompt]
     if model:
         cmd += ["--model", model]
-    out = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    # These router probes are synthetic, not real usage. Mark them so the
+    # dashboard's SessionEnd hook (session-uploader.py) skips uploading a
+    # session row per probe; otherwise a single eval run floods the Sessions
+    # list with ~1-turn, ~44K-token entries.
+    env = {**os.environ, "CLAUDE_CODE_USAGE_DASHBOARD_SKIP": "1"}
+    out = subprocess.run(cmd, capture_output=True, text=True, timeout=180, env=env)
     # Take the last non-empty line and trim trailing punctuation/quotes.
     lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
     return (lines[-1] if lines else "").strip().strip("`\"'.").strip()
