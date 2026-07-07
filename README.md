@@ -193,9 +193,11 @@ flowchart TB
     IMP -. コードレビュー .-> DIR
     SHIP -. 漏洩監査 .-> LKA
     SHIP -. SKILL.md変更時の作法 .-> SRV
+    SHIP -. skill実測(実質変更時) .-> SET
+    DRV -. 事実照合(claim単位) .-> FCK
 ```
 
-> 個人系 skill (link-triage / cc-tune / playbook-sync / explain-article / doc-illustrate / make-slides / make-kadai / gemini-multimodal / interest-profile / storage-cleanup) は private repo へ分離済み。`skill-empirical-tester` / `fact-checker` は skill 開発・教材検証時に明示委譲で使う（固定の呼び出し元を持たない）。
+> 個人系 skill (link-triage / cc-tune / playbook-sync / explain-article / doc-illustrate / make-slides / make-kadai / gemini-multimodal / interest-profile / storage-cleanup) は private repo へ分離済み。`skill-empirical-tester` は ship §3.6（新規 skill / 実質変更のとき）、`fact-checker` は doc-review の fact 観点から委譲される。加えて skill 開発・教材検証時には明示委譲でも使う。
 
 ## 発火のしくみ（何がキッカケで動くか）
 
@@ -266,7 +268,7 @@ skill は `SKILL.md` の `name` がディレクトリ名と一致していない
 | ツール | 何をするか | いつ走るか |
 |---|---|---|
 | `.claude/hooks/git-push-guard.py` | **Claude の PreToolUse hook**。Bash の `git push` を実行前に解析し、宛先が `main`/`master` なら `permissionDecision: deny` で機械ブロック（ラッパ・サブシェル・クォート経由も検知）。「main 直 push 禁止」を ship の散文ガードからツール強制に格上げしたもの | 自動（claude-forge を開いた Claude Code の全 Bash 呼び出し） |
-| `tests/lint_skills.py` | SKILL.md を持つ全 skill の構造を**決定的に**検証（`name`↔dir 一致 / `description` 必須 / 名前重複なし / SKILL.md 欠落ディレクトリ検出 / `triggers.json` に fixture があるか）。ネット・依存なし・一瞬。`_` 始まり (`_template`) と gitignore 済みのローカル専用 skill は対象外 | `python3 tests/lint_skills.py` を手動、または下の hook が自動実行 |
+| `tests/lint_skills.py` | SKILL.md を持つ全 skill の構造を**決定的に**検証（`name`↔dir 一致 / `description` 必須 / 名前重複なし / SKILL.md 欠落ディレクトリ検出 / `triggers.json` に fixture があるか）。`.claude/agents/` があれば **agent 層も検証**（A1–A4: agent の `name`↔ファイル名一致 / `description` 必須 / skill が委譲する `subagent_type` が実在するか＝rename による無言の委譲断を防ぐ）。ネット・依存なし・一瞬。`_` 始まり (`_template`) と gitignore 済みのローカル専用 skill は対象外・agents/ が無い repo では agent 層は no-op | `python3 tests/lint_skills.py` を手動、または下の hook が自動実行 |
 | `.claude/hooks/skill-lint.py` | **Claude の Stop hook**。SKILL.md を編集した（git で dirty な）ターンの終了時に上の lint を走らせ、ERROR があれば `exit 2` でターンを止める | 自動（claude-forge を Claude Code で開いて作業中のみ）。一時的に黙らせたい時は環境変数 `SKILL_LINT_HOOK=0` |
 | `.codex/hooks/skill-lint.py` | **Codex の Stop hook**（上の Claude hook と対）。Codex でこの repo を触った時も、ターン終了時に同じ `lint_skills.py` を走らせて壊れた SKILL.md を止める | 自動（Codex セッションで作業中のみ） |
 | `.github/workflows/skill-lint.yml` | **CI lint**。同じ `lint_skills.py` を PR / main push で走らせる多層防御（Stop hook はローカル限定なので、web 編集や hook 無しマシン経由の破損もここで止まる）。label gate なし・トークン消費ゼロ | `.claude/skills/**` か `tests/**` を触る PR で自動 |

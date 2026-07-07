@@ -1,6 +1,7 @@
 ---
 name: implement-issue
 argument-hint: "[issue-url | doc-path]"
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(git:*), Bash(gh issue view:*), Bash(gh issue edit:*), Bash(gh issue comment:*), Bash(gh issue close:*), Bash(gh issue list:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(ls:*)
 description: "GitHub IssueのURLまたはドキュメントパスを受け取り、要件分析→コードベース調査→実装→レビューサイクル→PR作成までを自動で行うスキル。issue の作業開始（着手）の既定の入口。「このissueに着手して」「issueやって」のように issue を渡して作業を始めるよう指示されたらこれを使う（内部で実装計画を出しユーザ確認してから実装に入るので、いきなり暴走しない）。以下の場合に使用: (1) GitHub Issue URLを渡されて「実装して」「これやって」「着手して」「取り掛かって」「やり始めて」「対応して」と依頼された場合 (2) ドキュメントパスを渡されて「実装して」と依頼された場合 (3) 「/implement-issue」と呼び出された場合 (4) Issue URLやドキュメントを渡されて実装からPR作成までを一気通貫で依頼された場合。明示的に「計画だけ」「設計だけ」「調査だけ」を求められた場合は実装に入らず [[plan-issue]] / [[spike]] を使う。「伴走して」「一緒に進めて」「要所で相談して」と自分を巻き込みながらの進行を求められたら、止まらず完走するこの skill ではなく [[banso]] を使う。"
 ---
 

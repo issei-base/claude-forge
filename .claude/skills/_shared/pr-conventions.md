@@ -127,3 +127,21 @@ PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応す
 - **ループは PR の review 状態を変えない（ready なら ready・draft なら draft）・ready-for-review 昇格も merge も絶対にしない**。
 - force push しない。`--force` / `--force-with-lease` はユーザの明示確認がある時だけ。
 - 同意できない指摘を黙って無視しない（dispute としてコメントする）。
+
+## 5. CI 起動待ち・検出（`ship` / `create-pr` / `fix-pr` の CI 自動修正ループの入口）
+
+§3 が「CI が失敗したらどう直すか」を定義するのに対し、ここは「そもそも CI が有るか・起動したか」の判定を唯一化する（§4 の Codex ループと同じく、各 SKILL.md にコピペしてドリフトさせない）。
+
+push 直後は CI run がまだ登録されていないことがある。**15 秒 1 回の `no checks reported` を「CI なし」と確定してはいけない** — 後から起動する CI を取りこぼし、§3 の自動修正ループごと空振りする。次の順で判定する:
+
+1. **起動待ち** — `gh pr checks <PR URL>` を **15 秒間隔で最大 ~90 秒**見て、check が 1 つでも現れたら「CI あり」。~90 秒経っても 1 つも現れなければ「CI なし」と確定して §4（Codex 応答ループ）へ進む。
+2. **完了待ち** — CI ありなら `timeout 900 gh pr checks <PR URL> --watch --interval 30`（最大 15 分）で完走を待つ。exit 0 = 全 PASS → §4 へ。FAIL あり → §3 の分類で自動修正 → 再 push → 1 に戻る（**最大 3 サイクル**・Codex ループと同数）。
+
+```bash
+# 起動待ち: check が現れるまで最大 ~90 秒。現れなければ「CI なし」で §4 へ
+for _ in $(seq 1 6); do
+  gh pr checks <PR URL> 2>/dev/null | grep -q . && break
+  sleep 15
+done
+gh pr checks <PR URL>   # 空 / `no checks reported` のままなら §4 へ、あれば完了待ちへ
+```

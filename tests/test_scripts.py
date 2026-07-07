@@ -18,7 +18,16 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _skills import REPO_ROOT, is_ignored_dir, parse_frontmatter  # noqa: E402
+from _skills import (  # noqa: E402
+    BUILTIN_AGENTS,
+    REPO_ROOT,
+    _PROSE_AGENT_RE,
+    _SUBAGENT_RE,
+    agent_refs_in_skills,
+    is_ignored_dir,
+    load_agents,
+    parse_frontmatter,
+)
 
 
 def _load(path: Path, name: str):
@@ -69,6 +78,39 @@ class TestIgnoredDirs(unittest.TestCase):
         # ohayou は skills/ の外 (tools/ohayou/) へ移設済みなので、skills/ 配下の
         # 名前としては例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
         self.assertFalse(is_ignored_dir("ohayou"))
+
+
+class TestAgentLint(unittest.TestCase):
+    """agent 層の lint (A1–A4)。skill と対称に agent の frontmatter・委譲参照を守る。"""
+
+    def test_subagent_type_extraction(self):
+        # doc-review / fix-pr / implement-issue 形式 (`subagent_type: X` / `=X`)。
+        self.assertEqual(_SUBAGENT_RE.findall("Agent tool（subagent_type: doc-reviewer）"), ["doc-reviewer"])
+        self.assertEqual(_SUBAGENT_RE.findall("subagent_type=general-purpose を直接"), ["general-purpose"])
+
+    def test_prose_agent_extraction(self):
+        # ship 形式 (`name` agent)。ハイフン必須なので repo agent だけ拾う。
+        self.assertEqual(_PROSE_AGENT_RE.findall("`skill-reviewer` agent（Agent tool）を回す"), ["skill-reviewer"])
+        self.assertIn("leak-auditor", _PROSE_AGENT_RE.findall("`leak-auditor` agent が無い repo"))
+        # backtick のツール名 (ハイフン無し) は agent 参照として拾わない。
+        self.assertEqual(_PROSE_AGENT_RE.findall("`WebSearch` は snippet を根拠にしない"), [])
+
+    def test_builtin_agents_excluded(self):
+        # explain-article の `claude-code-guide` agent は builtin なので repo 参照に数えない。
+        self.assertIn("claude-code-guide", BUILTIN_AGENTS)
+        self.assertNotIn("claude-code-guide", agent_refs_in_skills())
+
+    def test_repo_agent_names_match_filename(self):
+        # A2: 実 repo の全 agent で name == ファイル名 stem (ズレると委譲が無言で壊れる)。
+        for a in load_agents():
+            self.assertEqual(a["name"], a["stem"], f"{a['stem']}.md の name がファイル名と不一致")
+            self.assertTrue(a["description"], f"{a['stem']}.md に description が無い")
+
+    def test_every_delegated_agent_resolves(self):
+        # A4: skill が委譲する subagent_type は全て実在する agent に解決する。
+        names = {a["name"] for a in load_agents()}
+        for ref, dirs in agent_refs_in_skills().items():
+            self.assertIn(ref, names, f"{sorted(set(dirs))} が未定義 agent '{ref}' に委譲している")
 
 
 class TestSymlinkDrift(unittest.TestCase):
