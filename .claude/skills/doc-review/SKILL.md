@@ -32,6 +32,7 @@ argument-hint: "[file-path]"
 3. Agent tool で「同一メッセージ内で並列起動」
      - subagent_type: doc-reviewer （中核のドキュメント品質レビュー）
      - subagent_type: general-purpose （security/ops/cost が必要な場合のみ）
+     - subagent_type: fact-checker （数値・上限・価格・構文など検証すべき事実主張が多い場合のみ）
        ↓ 各レビュワーが構造化レビュー結果を返す
 4. リーダーが結果を集約・妥当性判断
        ↓
@@ -63,6 +64,7 @@ argument-hint: "[file-path]"
 | **security 専門** | `subagent_type: general-purpose`（下記 prompt） | 脅威モデル・認証認可・機密情報・リスク明記漏れ |
 | **ops 専門** | `subagent_type: general-purpose`（下記 prompt） | 運用手順の実行可能性・障害復旧・監視・ロールバック |
 | **cost 専門** | `subagent_type: general-purpose`（下記 prompt） | 実装工数・代替比較・ランニングコスト・ROI |
+| **fact 専門** | `subagent_type: fact-checker` | 数値・上限・クォータ・価格・コマンド/API 構文など事実主張を claim 単位で一次ソースに照合（VERIFIED/REFUTED/UNVERIFIABLE・出典付き） |
 
 **レビュワーはドキュメントを直接編集しない** — 指摘と改善案を返すだけ。修正はリーダーが行う。
 **内容に応じて必要なレビュワーだけ起動する**（下記 Reviewer Selection Guide）。個人開発のドキュメントでは過剰に全観点を起動しない。
@@ -99,7 +101,7 @@ Agent tool（同一メッセージで並列）:
 
 ## Step 3: 再レビューサイクル
 
-- 再起動する観点は次の手順で選ぶ: ①指摘のあった観点は必ず再起動 → ②今回の修正内容を見て、**修正が他の観点の判定を変えうるならその観点も再起動** → ③どちらにも当たらない観点は再起動しない。②の典型 (再起動単位はレビュワー = 中核/security/ops/cost): 運用手順・構成を書き換えた → ops も / 認証・機密情報に触れる記述を変えた → security も / 実装方式を変えて工数・費用が動いた → cost も / 専門観点 (security/ops/cost) の指摘対応で本文を書き換えた → 中核 (doc-reviewer) も。中核は 1 起動で品質 5 軸 (正確性・完全性・明確性・実用性・構成) を全て見るので、軸単位の再起動は無い。「前ラウンドで PASS したか」ではなく「今回の修正を新規に検証すべき観点はどれか」で判断する。
+- 再起動する観点は次の手順で選ぶ: ①指摘のあった観点は必ず再起動 → ②今回の修正内容を見て、**修正が他の観点の判定を変えうるならその観点も再起動** → ③どちらにも当たらない観点は再起動しない。②の典型 (再起動単位はレビュワー = 中核/security/ops/cost/fact): 運用手順・構成を書き換えた → ops も / 認証・機密情報に触れる記述を変えた → security も / 実装方式を変えて工数・費用が動いた → cost も / 専門観点 (security/ops/cost) の指摘対応で本文を書き換えた → 中核 (doc-reviewer) も。中核は 1 起動で品質 5 軸 (正確性・完全性・明確性・実用性・構成) を全て見るので、軸単位の再起動は無い。「前ラウンドで PASS したか」ではなく「今回の修正を新規に検証すべき観点はどれか」で判断する。
 - 再起動は Agent tool で新規起動し、prompt に「前回の指摘」と「今回の修正内容」を含めて渡す。
 - 各観点が PASS を返すまで繰り返す。
 - **最大3ラウンド**。3ラウンド目でも FAIL の観点があれば、残課題を完了レポートに明記して終了。
@@ -149,7 +151,9 @@ Agent tool（同一メッセージで並列）:
 | API設計書 | doc-reviewer | security |
 | 技術選定レポート | doc-reviewer | cost |
 | 実装計画ドラフト（plan-issue） | doc-reviewer | security/ops（計画の内容に応じて。無くてもよい） |
-| 一般技術ドキュメント・教材 | doc-reviewer | （追加なし） |
+| 一般技術ドキュメント・教材 | doc-reviewer | （追加なし。事実主張が多ければ fact） |
+
+> **fact をいつ足すか**: 数値・上限・クォータ・価格・コマンド/API 構文といった**検証すべき事実主張が多い**文書（教材・調査レポート・API 設計書など）は fact 専門（fact-checker）を追加する。中核の doc-reviewer も一次ソース裏取りをするが、**文書まるごとの品質＝doc-reviewer / claim 単位で全数を逐語照合＝fact-checker** と使い分ける。AWS の数値・挙動が主眼なら [[aws-docs]] で足りることも多い。
 
 ## Iteration Limit
 
@@ -167,7 +171,7 @@ Agent tool（同一メッセージで並列）:
 ### レビュー構成
 | 観点 | 起動元 | 最終ステータス |
 |------|--------|--------------|
-| 中核（正確性・明確性・実用性・構成） | doc-reviewer agent | PASS |
+| 中核（正確性・完全性・明確性・実用性・構成） | doc-reviewer agent | PASS |
 | security | general-purpose | PASS |
 
 ### レビューラウンド履歴

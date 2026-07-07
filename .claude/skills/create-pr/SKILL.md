@@ -202,14 +202,17 @@ PR 作成後、CI が走る場合は完了まで待ち、FAIL なら自動修正
 
 ### Step 6-1: CI 起動待ち＆有無確認
 
-push 直後は CI run が登録される前なので 15 秒待ってから確認する。
+**起動待ち・検出は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §5 が唯一の定義**（ship / fix-pr と同一）。要点（fallback）: **15 秒 1 回の `no checks reported` で「CI なし」を確定しない**（後発 CI を取りこぼす）。15 秒間隔で最大 ~90 秒 polling する。
 
 ```bash
-sleep 15
+for _ in $(seq 1 6); do
+  gh pr checks <PR URL> 2>/dev/null | grep -q . && break
+  sleep 15
+done
 gh pr checks <PR URL>
 ```
 
-`no checks reported` / 空出力ならこの CI Step をスキップして Step 6.5（Codex 応答ループ）へ。
+check が最後まで 1 つも現れなければこの CI Step をスキップして Step 6.5（Codex 応答ループ）へ。現れたら Step 6-2 の完了待ちへ。
 
 ### Step 6-2: CI 完了待ち（最大15分）
 

@@ -25,6 +25,15 @@ Checks (ERROR = non-zero exit; WARN = printed, still exits 0 if no errors):
       (docs.claude.com/.../skills); past it, trailing trigger phrases are dropped
       and auto-firing silently degrades. Warns approaching the cap, before it bites.
 
+Agent layer (only when a .claude/agents/ dir exists — no-op in skills-only repos):
+  A1  each agents/*.md has a `name` in frontmatter
+  A2  agent `name` matches its filename stem (subagent_type resolves by file name,
+      so a mismatch makes the agent unreachable and delegation fails silently)
+  A3  agent has a `description` (delegation is description-driven, per README)
+  A4  every agent a skill delegates to (subagent_type: X or `X` agent prose) is
+      defined by some agents/*.md — guards hardcoded delegation from breaking
+      silently when an agent is renamed or removed
+
 Usage:
   python3 tests/lint_skills.py [--strict]   # --strict: treat warnings as errors
 """
@@ -35,7 +44,13 @@ import json
 import sys
 from pathlib import Path
 
-from _skills import SKILLS_DIR, find_orphan_dirs, load_skills
+from _skills import (
+    SKILLS_DIR,
+    agent_refs_in_skills,
+    find_orphan_dirs,
+    load_agents,
+    load_skills,
+)
 
 MIN_DESC_LEN = 40
 # CC truncates `description` + `when_to_use` combined at this many chars in the
@@ -122,8 +137,34 @@ def lint() -> int:
             if s["name"] and s["name"] not in covered:
                 warns.append(f"[{s['dir']}] W2 no fixture in triggers.json (add a firing test)")
 
+    # Agent layer (A1–A4). load_agents() is empty in a skills-only repo, so the
+    # whole block is a no-op there — skills stay the only concern.
+    agents = load_agents()
+    agent_names: set[str] = set()
+    for a in agents:
+        stem, name, desc = a["stem"], a["name"], a["description"]
+        if not name:
+            errors.append(f"[agents/{stem}.md] A1 missing `name` in frontmatter")
+        else:
+            agent_names.add(name)
+            if name != stem:
+                errors.append(
+                    f"[agents/{stem}.md] A2 name '{name}' != file '{stem}' "
+                    "(subagent_type unresolvable — delegation fails silently)"
+                )
+        if not desc:
+            errors.append(f"[agents/{stem}.md] A3 missing `description` (delegation is description-driven)")
+    if agents:  # A4: only cross-check when this repo actually ships agents.
+        for ref, dirs in sorted(agent_refs_in_skills().items()):
+            if ref not in agent_names:
+                errors.append(
+                    f"A4 skill(s) {', '.join(sorted(set(dirs)))} delegate to '{ref}' "
+                    "but no agents/*.md defines it (delegation fails silently)"
+                )
+
     strict = "--strict" in sys.argv
-    print(f"Linted {len(skills)} skills under {SKILLS_DIR.relative_to(SKILLS_DIR.parents[2])}")
+    scope = f"{len(skills)} skills" + (f" + {len(agents)} agents" if agents else "")
+    print(f"Linted {scope} under {SKILLS_DIR.relative_to(SKILLS_DIR.parents[2])}")
     for w in warns:
         print(f"  WARN  {w}")
     for e in errors:
@@ -133,7 +174,7 @@ def lint() -> int:
     if fail:
         print(f"\nFAILED: {len(errors)} error(s)" + (f", {len(warns)} warning(s) [strict]" if strict else ""))
         return 1
-    print(f"\nOK: {len(skills)} skills valid" + (f" ({len(warns)} warning(s))" if warns else ""))
+    print(f"\nOK: {scope} valid" + (f" ({len(warns)} warning(s))" if warns else ""))
     return 0
 
 

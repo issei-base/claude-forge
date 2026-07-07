@@ -19,6 +19,20 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
+AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
+
+# Built-in subagent types shipped by Claude Code (no agents/*.md to resolve to).
+# Skills reference these via subagent_type / prose, so the "referenced agent
+# exists" cross-check (lint A4) must exempt them or it false-positives.
+BUILTIN_AGENTS: set[str] = {
+    "general-purpose",
+    "Explore",
+    "Plan",
+    "claude",
+    "claude-code-guide",
+    "statusline-setup",
+    "output-style-setup",
+}
 
 # Named dirs under skills/ that are intentionally local-only and must not be
 # linted as public skills (gitignored, may be present locally without a SKILL.md).
@@ -135,6 +149,53 @@ def load_skills() -> list[dict]:
             }
         )
     return skills
+
+
+_SUBAGENT_RE = re.compile(r"subagent[_-]type[:=]\s*[\"'`]?([A-Za-z0-9_-]+)")
+# ship wires its gate agents in prose as `name` agent, not via subagent_type:.
+# Require a hyphen so repo agents (all hyphenated: doc-reviewer, leak-auditor…)
+# match while plain backticked tool names (`Read`, `WebSearch`) never do.
+_PROSE_AGENT_RE = re.compile(r"`([A-Za-z0-9]+-[A-Za-z0-9_-]+)`\s*(?:agent|エージェント)")
+
+
+def load_agents() -> list[dict]:
+    """Return one record per custom agent: stem, name, description, path.
+
+    Empty when there's no agents/ dir (a skills-only repo like
+    claude-forge-personal), so the agent lint degrades to a graceful no-op.
+    """
+    if not AGENTS_DIR.exists():
+        return []
+    agents = []
+    for md in sorted(AGENTS_DIR.glob("*.md")):
+        fm = parse_frontmatter(md.read_text(encoding="utf-8"))
+        agents.append(
+            {
+                "stem": md.stem,
+                "name": fm.get("name", ""),
+                "description": fm.get("description", ""),
+                "path": md,
+            }
+        )
+    return agents
+
+
+def agent_refs_in_skills() -> dict[str, list[str]]:
+    """Map each referenced agent name -> skill dirs that delegate to it.
+
+    Covers both `subagent_type: X` (doc-review / fix-pr / implement-issue) and
+    the `X` agent prose form (ship's skill-reviewer / leak-auditor gates).
+    Built-in subagent types are dropped — they have no agents/*.md to resolve to.
+    """
+    refs: dict[str, list[str]] = {}
+    for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
+        if is_ignored_dir(skill_md.parent.name):
+            continue
+        text = skill_md.read_text(encoding="utf-8")
+        names = set(_SUBAGENT_RE.findall(text)) | set(_PROSE_AGENT_RE.findall(text))
+        for n in names - BUILTIN_AGENTS:
+            refs.setdefault(n, []).append(skill_md.parent.name)
+    return refs
 
 
 def find_orphan_dirs() -> list[str]:

@@ -2,7 +2,7 @@
 name: create-issue
 argument-hint: "[issue-url (リライト時のみ)]"
 description: "GitHub Issue の作成・リライトを行うスキル。新規作成と既存Issueのリライト（第三者が実装できる粒度への改善）に対応。対象リポジトリはカレントの git リポジトリ（または明示指定した owner/repo）。以下の場合に使用: (1) タスクの Issue を作成したいとき (2) 「Issue作って」「タスク登録して」と依頼されたとき (3) 「/create-issue」と呼び出されたとき (4) 会話で議論した内容をIssueとしてまとめたいとき (5) 既存IssueのURLを渡されて「内容を修正して」「リライトして」と依頼されたとき"
-allowed-tools: Read, Glob, Grep, Bash(gh issue create:*), Bash(gh issue edit:*), Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh api:*), Bash(gh project:*), Bash(gh repo view:*), Bash(git remote:*)
+allowed-tools: Read, Glob, Grep, Bash(gh issue create:*), Bash(gh issue edit:*), Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh api:*), Bash(gh project:*), Bash(gh repo view:*), Bash(git remote:*), Bash(python3:*), Bash(base64:*)
 ---
 
 # GitHub Issue 管理スキル
