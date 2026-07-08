@@ -1,6 +1,6 @@
 ---
 name: install-pr-reviews
-description: 現在の cwd の GitHub リポジトリで Codex GitHub code review を有効化するための設定確認と案内を行う。ユーザーが「この repo にも PR レビュー入れて」「自動レビューを有効化して」「Codex review を入れて」「セキュリティチェックも入れて」など、PR レビュー運用を整えたい意図を示したときに発動する。
+description: "現在の cwd の GitHub リポジトリで、Codex GitHub code review を標準の PR レビュー体制としてセットアップする skill（Codex settings 側の有効化手順の案内 + AGENTS.md の Review Guidelines 整備 + PR 作成後の運用確認。破壊操作なし）。ユーザーが「この repo にも PR レビュー入れて」「自動レビューを有効化して」「Codex review をセットアップして」「PR レビュー運用を整えたい」「レビュー体制を作って」など、repo のレビュー体制づくりを求めたときに発動する。今ある差分を一度レビューしてほしいだけなら [[codex-secondopinion]]（そちらはレビューの実行、こちらは体制のセットアップ）。"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git rev-parse:*), Bash(git remote:*), Bash(gh auth status:*), Bash(gh repo view:*)
 ---
 

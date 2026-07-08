@@ -86,6 +86,8 @@ Phase 1 の verbatim を壊さずに、その**後ろで** Codex の各指摘を
 
 **ユーザーが修正を望んだときだけ**入る。Phase 2 の **accept 分のみ** working tree にドラフト修正を当て、`codex review` を更新後の diff に再実行して収束を確認する。dispute / defer には手を付けない。
 
+> 上限が `_shared/pr-conventions.md` §4（PR review・最大 3 サイクル）より短いのは意図的 — こちらは push 前のローカル差分で 1 周が軽く、2 周で収束しなければ人間判断に渡す方が速いため。
+
 ループ（最大 2 周）:
 
 1. accept の指摘を working tree に修正する（commit はしない・working tree のみ）。

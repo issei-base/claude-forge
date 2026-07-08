@@ -94,18 +94,9 @@ git rev-parse --is-inside-work-tree 2>/dev/null && git remote -v
 3. Step 2-1でカレントディレクトリがGitリポジトリだった → そのリポジトリ
 4. 上記で判断できない → ユーザに確認
 
-**Step 2-3: ローカルリポジトリの探索（クローン前に必ず実施）**
+**Step 2-3: ローカルリポジトリの探索と準備**
 
-カレントディレクトリが対象リポジトリそのものであれば、そのまま使用する。
-そうでない場合は `~/projects/` 配下に既にクローンされていないか確認する。
-
-```bash
-ls ~/projects/<リポジトリ名> 2>/dev/null
-```
-
-- カレントディレクトリが対象リポジトリ → そのまま使用
-- `~/projects/<リポジトリ名>` に存在する → そのディレクトリを使用（`cd` して default branch を最新化）
-- どちらにもない → `gh repo clone <owner>/<repo> ~/projects/<リポジトリ名>` でクローン
+Step 2-2 で特定した対象リポジトリを、[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§6** の手順（カレント確認 → `~/projects/<リポジトリ名>` 探索 → 無ければ `gh repo clone` → default branch を最新化）でローカルに用意する。
 
 **複数リポジトリが対象の場合：**
 Phase 4〜8 をリポジトリごとに繰り返す。完了報告（Phase 9）は全リポジトリ分をまとめて行う。

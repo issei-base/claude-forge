@@ -10,6 +10,18 @@ lint / install / 発火の対象外。
 > （global symlink 運用でも cwd 非依存で読める）。別マシン等でこのファイルが
 > 無いときは、各 SKILL.md 内に残した「fallback 要点」に従う。
 
+## 0. 共通安全ルール（ship / create-pr / fix-pr 共通の hard guard）
+
+§3〜§5 と同じく、ここを唯一の定義とし各 SKILL.md は参照 + fallback 要点だけ残す。
+
+- **main / master / default branch へ直接 push しない。例外なし**（`git-push-guard.py` hook が harness 層でも deny する）。フィーチャーブランチを必ず作成・使用する。
+- **`gh pr merge` を実行しない。** merge は人間が GitHub UI で内容を見て手動で行う。PR の ready / draft 状態も変えない。
+- **force push しない。** `--force` / `--force-with-lease` はユーザーの明示確認がある時だけ。
+- **`git add -A` / `git add .` を使わない。** 変更ファイルを明示パス指定で stage する。
+- **Co-Authored-By を付与しない。**
+- **コミットメッセージ・PR タイトル / 本文は日本語で書く**（本文の bullet も日本語。英語 subject にしない）。
+- **secret（`.env`・key file・token 等のパターン）を commit しない。**
+
 ## 1. 本文の簡潔さ（PR 本文・Issue 本文・計画コメント 共通）
 
 レビュアー / 第三者が「diff や実作業を始める前に欲しい情報」だけに絞る。
@@ -145,3 +157,25 @@ for _ in $(seq 1 6); do
 done
 gh pr checks <PR URL>   # 空 / `no checks reported` のままなら §4 へ、あれば完了待ちへ
 ```
+
+## 6. 対象リポジトリの特定・準備（plan-issue / implement-issue / fix-pr 共通）
+
+Issue / PR の URL から `owner/repo` を特定したら、次の順でローカルを準備する（3 skill に
+同じ手順をコピペしてドリフトさせない）。**worktree の探索・作成はここに含めない** —
+fix-pr（PR ブランチの既存 worktree）と implement-issue（新規ブランチ）で意味が違うため、
+各 SKILL.md 側に残す。
+
+1. **カレント確認**: `pwd` + `git rev-parse --is-inside-work-tree 2>/dev/null && git remote -v`。
+   カレントが対象リポジトリならそのまま使う。
+2. **ローカル探索**: `ls ~/projects/<リポジトリ名> 2>/dev/null`。あればそれを使う。
+3. **無ければ clone**: `gh repo clone <owner>/<repo> ~/projects/<リポジトリ名>`
+4. **default branch を最新化**:
+   ```bash
+   cd <リポジトリパス>
+   git fetch origin
+   DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+   git checkout $DEFAULT_BRANCH && git pull origin $DEFAULT_BRANCH
+   ```
+
+skill 固有の前段はそれぞれの SKILL.md 側に残す（implement-issue: Issue の repo が実装先とは
+限らない判定 / fix-pr: `headRefName` の worktree 探索・作成 / plan-issue: 調査のみでブランチは切らない）。
