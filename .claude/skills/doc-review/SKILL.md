@@ -1,6 +1,6 @@
 ---
 name: doc-review
-description: "技術ドキュメントや実装計画ドラフトを、複数観点の専門家レビュワーを並列起動してレビューし、リーダーが集約・修正・再レビューまで回す多観点レビュー*ワークフロー*。中核は doc-reviewer agent に委譲し、必要時のみ security/ops/cost を general-purpose で追加する。以下で使用: (1) plan-issue 等から計画ドラフトのレビューを委譲されたとき (2) 設計書など重要ドキュメントを多観点でレビュー＋修正ループまで回したいとき (3) 「/doc-review」と呼ばれたとき。単発の軽いレビューは doc-reviewer agent、コード実装のレビューは doc-impl-reviewer agent を直接使う。"
+description: "技術ドキュメントや実装計画ドラフトを、複数観点の専門家レビュワーを並列起動してレビューし、リーダーが集約・修正・再レビューまで回す多観点レビュー*ワークフロー*。中核は doc-reviewer agent に委譲し、必要時のみ security/ops/cost を general-purpose で追加する。以下で使用: (1) plan-issue 等から計画ドラフトのレビューを委譲されたとき (2) 設計書など重要ドキュメントを多観点でレビュー＋修正ループまで回したいとき — 「この設計ドキュメントを多観点でレビューして修正まで回して」「複数観点でレビューして直して」「多角的にレビューして修正して」 (3) 「/doc-review」と呼ばれたとき。単発の軽いレビュー（「軽くレビューして」「1人でざっと見て」「ざっとレビューして」）は doc-reviewer agent、コード実装のレビューは doc-impl-reviewer agent を直接使う。"
 argument-hint: "[file-path]"
 ---
 
