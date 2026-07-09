@@ -31,6 +31,7 @@
 
     { "query": "この通知機能、伴走しながら一緒に作ろう。勝手に完走せず要所で相談して、私も理解しながら進めたい", "expect": "banso" },
     { "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて", "expect": "banso" },
+    { "query": "認証まわり全然知らないんだけど、ブラインドスポットパスして関連する unknown unknowns を洗い出してほしい", "expect": "banso" },
     { "query": "https://github.com/acme/app/issues/88 に着手して。ただし要所で私に相談しながら一緒に進めて", "expect": "banso" },
     { "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて", "expect": "implement-issue" }
   ]
