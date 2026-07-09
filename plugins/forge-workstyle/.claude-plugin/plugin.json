@@ -1,0 +1,8 @@
+{
+  "name": "forge-workstyle",
+  "version": "0.1.0",
+  "description": "伴走・尋問・スパイク調査・多観点ドキュメントレビュー・AWS 一次ソース確認など、実装に被せる進め方モードの skill・agent 集。",
+  "author": {
+    "name": "issei-base"
+  }
+}

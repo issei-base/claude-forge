@@ -4,33 +4,37 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 
 ## このリポジトリは何か
 
-- `.claude/skills/<name>/SKILL.md` 形式の skill 群。この repo を Claude Code で開くと **project スコープ**で自動発火する。
+- **1 repo・複数プラグインの marketplace**。skill / agent / hook の**実体は `plugins/<plugin>/` に置き**、この repo を Claude Code で開いた時の project スコープ (`.claude/skills` `.claude/agents` `.claude/hooks`) はそこへの**相対 symlink** で構成する。だから claude-forge を開けば従来どおり全 skill が **project スコープ**で自動発火し、同時に `claude plugin install` でも配れる。プラグインは 3 つ: `forge-github-flow` (PR/Issue/レビュー体制 + main 直 push 防止 hook) / `forge-workstyle` (進め方・調査・レビューのモード) / `forge-skill-dev` (skill 開発ツール agent)。
 - **スコープは開発フロー系 skill のみ**。個人用途の skill (記事消化・Mac 環境メンテ等) は private repo **claude-forge-personal** (`~/projects/claude-forge-personal`) に分離してある (2026-07-06)。新しい skill の置き場所判断: 開発ワークフロー・他人のプロジェクトでも意味がある → ここ / 自分の学習・自分のマシン・チーム内部にしか意味がない → personal 側。両 repo とも `install.sh` で `~/.claude/skills/` へ symlink するので実働は union。
-- **この repo が skill の source of truth**。使い方は 2 通り: (1) **project スコープ** — claude-forge を開く、または使いたい skill を相手プロジェクトの `.claude/skills/` に `cp -R`。(2) **global** — 各 skill を `~/.claude/skills/<name>` に symlink すると全プロジェクトで使える（原本は claude-forge・編集は一箇所）。スクリプトは `Path(__file__).resolve()` で原本パスに解決されるので、symlink 経由でも data/config は claude-forge 側を見て壊れない。
+- **この repo が skill の source of truth**。使い方: (1) **プラグイン** — `claude plugin marketplace add issei-base/claude-forge` → `claude plugin install forge-github-flow@claude-forge` 等（呼び名は `forge-github-flow:ship` に namespace 化）。(2) **project スコープ** — claude-forge を開く、または使いたい skill を相手プロジェクトの `.claude/skills/` に `cp -RL`（symlink 実体化。`cp -R` だと壊れた symlink がコピーされる）。(3) **global** — 各 skill を `~/.claude/skills/<name>` に symlink すると全プロジェクトで使える（原本は claude-forge・編集は一箇所）。スクリプトは `Path(__file__).resolve()` で原本パスに解決されるので、symlink 経由でも data/config は claude-forge 側を見て壊れない。
 - project 設定は `.claude/settings.json`（コミット版・skill 用の権限 + `aws` MCP）。repo を開くと自動適用される。個人 / マシン固有・ランタイム上書きは `.claude/settings.local.json`（gitignore 済み）か `~/.claude/settings.json` へ（コミット版を汚さない）。
 
 ## レイアウト
 
 | パス | 役割 |
 |---|---|
-| `.claude/skills/<name>/SKILL.md` | skill 本体。description で自動発火 or `/<name>` で明示呼び |
-| `.claude/skills/<name>/{assets,references,scripts}/` | skill 同梱のテンプレ・参照資料・補助スクリプト (任意) |
-| `.claude/skills/_template/SKILL.md.tmpl` | 新規 skill の雛形 (`_` 始まり = lint/install/発火の対象外。`.tmpl` なので skill 登録もされない) |
-| `.claude/agents/` | カスタム agent (doc-reviewer / doc-impl-reviewer / skill-reviewer / leak-auditor / fact-checker / skill-empirical-tester) |
-| `.claude/hooks/skill-lint.py` | Stop hook。SKILL.md を編集したターン終了時に `tests/lint_skills.py` を走らせ、壊れてたら `exit 2` で停止をブロック |
-| `.claude/hooks/git-push-guard.py` | PreToolUse hook (Bash)。宛先が `main`/`master` の `git push` を harness 層で deny し、「main 直 push 禁止」を ship の散文ガードから格上げ。`rm -rf`/`sudo` 等は settings の permissions.deny 済みなので扱わない |
-| `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
+| `.claude-plugin/marketplace.json` | マーケットプレイス定義。`owner` + `plugins[]` (3 プラグイン・各 `source: ./plugins/<name>`)。lint E8 が `plugins/` 直下と 1:1 一致を守る |
+| `plugins/<plugin>/.claude-plugin/plugin.json` | 各プラグインの manifest (`name`==ディレクトリ名 / `version` / `description`)。中身を変えた PR では `version` を patch bump する |
+| `plugins/<plugin>/skills/<name>/SKILL.md` | **skill 本体 (実体)**。`{assets,references,scripts}/` も実体側に同梱。description で自動発火 or `/<name>`（プラグイン経由なら `<plugin>:<name>`）で明示呼び |
+| `plugins/forge-github-flow/hooks/` | `hooks.json` + `git-push-guard.py`（`${CLAUDE_PLUGIN_ROOT}` 参照）。プラグイン install 側の settings 配線は不要 |
+| `.claude/skills/<name>` | `plugins/<plugin>/skills/<name>` への**相対 symlink** (`ln -s ../../plugins/...`)。project スコープ発火・install.sh・lint は symlink 経由で実体を見る |
+| `.claude/skills/_template/SKILL.md.tmpl` | 新規 skill の雛形（**実体のまま**・配布しない。`_` 始まり = lint/install/発火の対象外。`.tmpl` なので skill 登録もされない） |
+| `.claude/agents/<name>.md` | `plugins/<plugin>/agents/<name>.md` への**相対 symlink**（6 agent: doc-reviewer / doc-impl-reviewer / skill-reviewer / leak-auditor / fact-checker / skill-empirical-tester） |
+| `.claude/hooks/skill-lint.py` | Stop hook（**実体**・repo 開発専用で配布しない）。SKILL.md を編集したターン終了時に `tests/lint_skills.py` を走らせ、壊れてたら `exit 2` で停止をブロック |
+| `.claude/hooks/git-push-guard.py` | `plugins/forge-github-flow/hooks/git-push-guard.py` への **symlink**。PreToolUse hook (Bash) で宛先が `main`/`master` の `git push` を harness 層で deny。`rm -rf`/`sudo` 等は settings の permissions.deny 済みなので扱わない |
+| `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・E1–E8/W1–W3・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
 | `install.sh` | 全 skill + agent を `~/.claude/` に symlink (global 運用)。`_`/SKILL.md 無しの dir はスキップ。`--dry-run` 可 |
-| `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。個人用上書きは `.claude/settings.local.json`（gitignore） |
+| `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。**このタスクでは変更しない**（hook パスは symlink 経由で生きる）。個人用上書きは `.claude/settings.local.json`（gitignore） |
 | `.github/workflows/` | `skill-lint.yml` (CI lint・label gate なし) のみ。PR レビューは Codex GitHub code review に一本化（review 用 workflow は持たない） |
-| `LICENSE` | MIT (cp -R / fork を許可) |
+| `LICENSE` | MIT (cp -RL / fork / plugin install を許可) |
 
 > skill / agent の**全一覧と各トリガ**は README の「現在の skill」「現在の agent」表が source of truth。CLAUDE.md は作業作法だけを扱い、個々の skill 説明は重複させない（PR フローの 3 skill だけは作法と密結合なので下の「PR / ship フロー」で詳述する）。
 
 ## 約束事
 
 - **スラッシュコマンドは作らない。すべて skill に統合**する (Anthropic の方針)。`commands/` は置かない。明示呼びは `/<skill-name>`。
-- **skill を足す/直す時**は `.claude/skills/<name>/SKILL.md` を編集 (新規は `_template/SKILL.md.tmpl` を土台に)。frontmatter の `name` と `description` を正確に — `description` が自動発火のトリガなので、発動すべきフレーズ例を具体的に書く。`name` は必ずディレクトリ名と一致させる (ズレると skill が呼べない)。新規 skill は `tests/triggers.json` に fixture を最低 1 つ足す (正例 + 紛らわしい負例)。無いと CI lint (`--strict`) と Stop hook の W2 が指摘する。
+- **新規 skill は所属プラグインを判断して `plugins/<plugin>/skills/<name>/` に実体を置き、`.claude/skills/<name>` に相対 symlink を張る**（`ln -s ../../plugins/<plugin>/skills/<name> .claude/skills/<name>`）。所属判断の目安: **PR / Issue / レビュー体制 → `forge-github-flow`** / **進め方・調査・レビューのモード → `forge-workstyle`** / **skill 開発ツール → `forge-skill-dev`**。symlink を張り忘れる/実体だけ足すと lint **E7** が止める。既存 skill を直す時も実体 (`plugins/...`) を編集する（`.claude/skills/<name>` は symlink なので実体を指す）。**プラグインの中身を変えた PR では、その `plugin.json` の `version` を patch bump する**。
+- **skill を足す/直す時**は SKILL.md の frontmatter の `name` と `description` を正確に — `description` が自動発火のトリガなので、発動すべきフレーズ例を具体的に書く（新規は `_template/SKILL.md.tmpl` を土台に）。`name` は必ずディレクトリ名と一致させる (ズレると skill が呼べない)。新規 skill は `tests/triggers.json` に fixture を最低 1 つ足す (正例 + 紛らわしい負例)。無いと CI lint (`--strict`) と Stop hook の W2 が指摘する。
 - **`gh`/`git` 等の外部コマンドを叩く skill は `allowed-tools` で最小スコープを宣言**する (例: `create-issue` / `plan-issue` の frontmatter)。実際の権限ゲートは `.claude/settings.json` の allow-list + 対話承認 + ship の hard guard だが、SKILL.md 側にも宣言しておくと意図が明示され読み手にも優しい。
 - **SKILL.md の書き方 craft (model の遵守精度を上げる)**: 禁止/例外は「使うのは X のみ。通常は Y」と断定で書く (曖昧な「〜など」は AI が多用する・稀なものは全面禁止で矯正)。難判断は「A を見る→B と比べる→C を確認」の順序つき手順にする。重複を書かず粒度を揃える。lookup 参照は `references/` に種別分割し、横断ルールは `_shared/` に集約。詳細は `_template/SKILL.md.tmpl` の「書き方の作法」。
 - **SKILL.md を編集したターンは Stop hook (`skill-lint.py`) が `tests/lint_skills.py` を強制**する。`name`↔dir ズレ・description 欠落・名前重複・SKILL.md 欠落ディレクトリ (E6) があるとターンが止まる。同じ lint は CI (`.github/workflows/skill-lint.yml`) でも `--strict` で走る多層防御 (Stop hook はローカル限定)。意図的にスキップしたい時だけ環境変数 `SKILL_LINT_HOOK=0`。**lint (決定的) が見られない発火設計・craft は `skill-reviewer` agent が担う。SKILL.md を触った `ship` は §3.6 で skill-reviewer を必ず 1 回通す**(区切りで 1 回・編集のたびではない。agent 起動はモデル判断なので hook では自動化できず、ship のゲートに寄せた)。

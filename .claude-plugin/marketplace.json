@@ -1,0 +1,20 @@
+{
+  "name": "claude-forge",
+  "owner": {
+    "name": "issei-base"
+  },
+  "plugins": [
+    {
+      "name": "forge-github-flow",
+      "source": "./plugins/forge-github-flow"
+    },
+    {
+      "name": "forge-workstyle",
+      "source": "./plugins/forge-workstyle"
+    },
+    {
+      "name": "forge-skill-dev",
+      "source": "./plugins/forge-skill-dev"
+    }
+  ]
+}

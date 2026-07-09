@@ -19,14 +19,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _skills import (  # noqa: E402
+    AGENTS_DIR,
     BUILTIN_AGENTS,
     REPO_ROOT,
+    SKILLS_DIR,
     _PROSE_AGENT_RE,
     _SUBAGENT_RE,
     agent_refs_in_skills,
     is_ignored_dir,
     load_agents,
+    load_marketplace,
+    load_plugins,
     parse_frontmatter,
+    plugin_agents,
+    plugin_skills,
+    plugin_symlink_drift,
 )
 
 
@@ -175,6 +182,103 @@ class TestSymlinkDrift(unittest.TestCase):
             missing, linked = slint.symlink_drift(skills, home)
             self.assertEqual(linked, [])
             self.assertEqual(missing, ["a"])
+
+
+class TestPluginSymlinks(unittest.TestCase):
+    """E7: plugins/ bodies <-> .claude/ symlinks stay 1:1 (both directions)."""
+
+    def _make_tree(self, base, skills, agents=()):
+        """Build plugins/<plugin>/skills|agents bodies + an empty link dir."""
+        plugins = os.path.join(base, "plugins")
+        for name, plugin in skills.items():
+            d = os.path.join(plugins, plugin, "skills", name)
+            os.makedirs(d)
+            Path(d, "SKILL.md").write_text(f"---\nname: {name}\n---\n")
+        for stem, plugin in agents.items() if isinstance(agents, dict) else {}:
+            d = os.path.join(plugins, plugin, "agents")
+            os.makedirs(d, exist_ok=True)
+            Path(d, f"{stem}.md").write_text(f"---\nname: {stem}\n---\n")
+        links = os.path.join(base, ".claude", "skills")
+        os.makedirs(links)
+        return plugins, links
+
+    def test_real_repo_has_no_drift(self):
+        # 実 repo: 全 plugin skill/agent が .claude/ に正しく symlink されている。
+        self.assertEqual(plugin_symlink_drift(plugin_skills(), SKILLS_DIR, False), ([], []))
+        self.assertEqual(plugin_symlink_drift(plugin_agents(), AGENTS_DIR, True), ([], []))
+
+    def test_missing_symlink_flagged(self):
+        with tempfile.TemporaryDirectory() as base:
+            plugins, links = self._make_tree(base, {"ship": "gh", "spike": "ws"})
+            os.symlink(os.path.join(plugins, "gh", "skills", "ship"),
+                       os.path.join(links, "ship"))
+            # spike の symlink を張り忘れた → missing で検出、orphan は無し。
+            missing, orphan = plugin_symlink_drift(
+                {"ship": "gh", "spike": "ws"}, links, False, plugins_dir=plugins)
+            self.assertEqual(missing, ["spike"])
+            self.assertEqual(orphan, [])
+
+    def test_orphan_symlink_flagged(self):
+        with tempfile.TemporaryDirectory() as base:
+            plugins, links = self._make_tree(base, {"ship": "gh"})
+            os.symlink(os.path.join(plugins, "gh", "skills", "ship"),
+                       os.path.join(links, "ship"))
+            # plugins 外を指す symlink と、消えた body を指す dangling symlink。
+            outside = os.path.join(base, "elsewhere")
+            os.makedirs(outside)
+            os.symlink(outside, os.path.join(links, "stray"))
+            os.symlink(os.path.join(plugins, "gh", "skills", "gone"),
+                       os.path.join(links, "gone"))
+            missing, orphan = plugin_symlink_drift(
+                {"ship": "gh"}, links, False, plugins_dir=plugins)
+            self.assertEqual(missing, [])
+            self.assertEqual(orphan, ["gone", "stray"])
+
+    def test_wrong_target_counts_missing_and_orphan(self):
+        # ship の symlink が別 plugin(の存在しない)を指す → missing かつ orphan。
+        with tempfile.TemporaryDirectory() as base:
+            plugins, links = self._make_tree(base, {"ship": "gh"})
+            os.symlink(os.path.join(plugins, "ws", "skills", "ship"),  # 存在しない
+                       os.path.join(links, "ship"))
+            missing, orphan = plugin_symlink_drift(
+                {"ship": "gh"}, links, False, plugins_dir=plugins)
+            self.assertEqual(missing, ["ship"])
+            self.assertEqual(orphan, ["ship"])
+
+    def test_underscore_shared_symlink_not_orphan(self):
+        # _shared は source_map に無い(scaffold 扱い)が、plugins 内を指す symlink
+        # なので orphan にはしない。
+        with tempfile.TemporaryDirectory() as base:
+            plugins = os.path.join(base, "plugins")
+            shared = os.path.join(plugins, "gh", "skills", "_shared")
+            os.makedirs(shared)
+            Path(shared, "pr.md").write_text("x")
+            links = os.path.join(base, ".claude", "skills")
+            os.makedirs(links)
+            os.symlink(shared, os.path.join(links, "_shared"))
+            missing, orphan = plugin_symlink_drift({}, links, False, plugins_dir=plugins)
+            self.assertEqual((missing, orphan), ([], []))
+
+
+class TestPluginManifests(unittest.TestCase):
+    """E8: marketplace.json plugins[] <-> plugins/ dirs, and plugin.json shape."""
+
+    def test_marketplace_declares_every_plugin_dir(self):
+        mkt = load_marketplace()
+        self.assertIsNotNone(mkt, "marketplace.json missing/unparseable")
+        declared = {p["name"] for p in mkt["plugins"]}
+        on_disk = {p["dir"] for p in load_plugins()}
+        self.assertEqual(declared, on_disk)
+
+    def test_marketplace_source_paths_match(self):
+        for p in load_marketplace()["plugins"]:
+            self.assertEqual(p["source"], f"./plugins/{p['name']}")
+
+    def test_every_plugin_manifest_named_and_versioned(self):
+        for p in load_plugins():
+            self.assertTrue(p["has_manifest"], f"plugins/{p['dir']} lacks a valid plugin.json")
+            self.assertEqual(p["name"], p["dir"], f"plugins/{p['dir']} name mismatch")
+            self.assertTrue(p["version"], f"plugins/{p['dir']} plugin.json missing version")
 
 
 class TestGitPushGuard(unittest.TestCase):

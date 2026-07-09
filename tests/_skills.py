@@ -14,12 +14,19 @@ Frontmatter shapes seen in this repo and handled here:
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
+# Plugin-marketplace layout: real skill/agent/hook bodies live under plugins/,
+# and .claude/skills|agents hold *relative symlinks* into them (E7 guards the
+# 1:1 correspondence). marketplace.json declares which plugins ship (E8).
+PLUGINS_DIR = REPO_ROOT / "plugins"
+MARKETPLACE_FILE = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 
 # Built-in subagent types shipped by Claude Code (no agents/*.md to resolve to).
 # Skills reference these via subagent_type / prose, so the "referenced agent
@@ -214,6 +221,127 @@ def find_orphan_dirs() -> list[str]:
         if not (d / "SKILL.md").exists():
             orphans.append(d.name)
     return orphans
+
+
+def plugin_skills() -> dict[str, str]:
+    """Map ``skill name -> plugin dir`` for every real skill under
+    ``plugins/<plugin>/skills/<name>/SKILL.md``.
+
+    Scaffold/shared dirs (``_shared`` / ``_template`` — any ``_``/``.`` prefix,
+    see is_ignored_dir) are excluded: they are not standalone skills and E7 does
+    not require a matching symlink for them.
+    """
+    out: dict[str, str] = {}
+    if not PLUGINS_DIR.exists():
+        return out
+    for plugin in sorted(PLUGINS_DIR.iterdir()):
+        skills_dir = plugin / "skills"
+        if not skills_dir.is_dir():
+            continue
+        for d in sorted(skills_dir.iterdir()):
+            if not d.is_dir() or is_ignored_dir(d.name):
+                continue
+            if (d / "SKILL.md").exists():
+                out[d.name] = plugin.name
+    return out
+
+
+def plugin_agents() -> dict[str, str]:
+    """Map ``agent stem -> plugin dir`` for every ``plugins/<plugin>/agents/*.md``."""
+    out: dict[str, str] = {}
+    if not PLUGINS_DIR.exists():
+        return out
+    for plugin in sorted(PLUGINS_DIR.iterdir()):
+        agents_dir = plugin / "agents"
+        if not agents_dir.is_dir():
+            continue
+        for md in sorted(agents_dir.glob("*.md")):
+            out[md.stem] = plugin.name
+    return out
+
+
+def plugin_symlink_drift(source_map, link_dir, is_agent, plugins_dir=PLUGINS_DIR):
+    """Cross-check plugin bodies against the ``.claude`` symlinks that expose them.
+
+    ``source_map`` = ``{name: plugin}`` of real bodies under ``plugins/`` (from
+    plugin_skills / plugin_agents). ``link_dir`` = ``.claude/skills`` or
+    ``.claude/agents``. ``is_agent`` selects the ``<stem>.md`` file shape vs the
+    ``<name>/`` dir shape. ``plugins_dir`` is injectable so the check is unit
+    testable against a synthetic tree.
+
+    Returns ``(missing, orphan)``:
+      - ``missing`` = a plugin body with no ``.claude`` symlink resolving to it
+        (someone added a skill under plugins/ but forgot to link it — it won't
+        auto-fire or install).
+      - ``orphan``  = a symlink under ``link_dir`` that does not resolve to an
+        existing path inside ``plugins/`` (a dangling link, or one pointing
+        outside the plugin tree — e.g. a renamed/removed plugin skill).
+
+    realpath is used both ways so a link is only "correct" when it truly lands on
+    the expected body (a link to the wrong plugin counts as missing + orphan).
+    Whole-repo checkouts without a ``plugins/`` dir yield empty maps → no-op, so a
+    plugins-less repo (claude-forge-personal) is never false-flagged.
+    """
+    link_dir = Path(link_dir)
+    plugins_dir = Path(plugins_dir)
+    plugins_real = os.path.realpath(plugins_dir)
+    missing: list[str] = []
+    for name, plugin in sorted(source_map.items()):
+        link_name = f"{name}.md" if is_agent else name
+        link = link_dir / link_name
+        subdir = "agents" if is_agent else "skills"
+        expected = plugins_dir / plugin / subdir / link_name
+        if not link.is_symlink() or os.path.realpath(link) != os.path.realpath(expected):
+            missing.append(name)
+
+    orphan: list[str] = []
+    if link_dir.exists():
+        for entry in sorted(link_dir.iterdir()):
+            if not entry.is_symlink():
+                continue
+            if is_agent and entry.suffix != ".md":
+                continue
+            real = os.path.realpath(entry)
+            inside = real == plugins_real or real.startswith(plugins_real + os.sep)
+            if not (inside and os.path.exists(real)):
+                orphan.append(entry.name)
+    return missing, orphan
+
+
+def load_marketplace():
+    """Parsed ``.claude-plugin/marketplace.json`` dict, or None if missing/corrupt."""
+    try:
+        return json.loads(MARKETPLACE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def load_plugins() -> list[dict]:
+    """One record per ``plugins/<dir>``: dir, name, version, source, has_manifest.
+
+    ``has_manifest`` is False when ``.claude-plugin/plugin.json`` is absent or
+    unparseable (E8 turns that into an error). Empty when there's no ``plugins/``
+    dir, so E8 degrades to a no-op in a plugins-less repo.
+    """
+    out: list[dict] = []
+    if not PLUGINS_DIR.exists():
+        return out
+    for d in sorted(PLUGINS_DIR.iterdir()):
+        if not d.is_dir():
+            continue
+        manifest = d / ".claude-plugin" / "plugin.json"
+        rec = {"dir": d.name, "name": "", "version": "", "source": f"./plugins/{d.name}",
+               "has_manifest": False}
+        if manifest.exists():
+            try:
+                data = json.loads(manifest.read_text(encoding="utf-8"))
+                rec["name"] = data.get("name", "")
+                rec["version"] = str(data.get("version", ""))
+                rec["has_manifest"] = True
+            except ValueError:
+                pass  # unparseable manifest → has_manifest stays False (E8 error)
+        out.append(rec)
+    return out
 
 
 if __name__ == "__main__":
