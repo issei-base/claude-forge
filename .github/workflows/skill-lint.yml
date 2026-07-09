@@ -9,14 +9,20 @@ name: Skill Lint
 on:
   pull_request:
     paths:
+      - "plugins/**"
       - ".claude/skills/**"
+      - ".claude/agents/**"
       - ".claude/hooks/**"
+      - ".claude-plugin/**"
       - "tests/**"
   push:
     branches: [main]
     paths:
+      - "plugins/**"
       - ".claude/skills/**"
+      - ".claude/agents/**"
       - ".claude/hooks/**"
+      - ".claude-plugin/**"
       - "tests/**"
 
 permissions:

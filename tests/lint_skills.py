@@ -34,6 +34,18 @@ Agent layer (only when a .claude/agents/ dir exists — no-op in skills-only rep
       defined by some agents/*.md — guards hardcoded delegation from breaking
       silently when an agent is renamed or removed
 
+Plugin-marketplace layer (only when a plugins/ dir exists — no-op otherwise):
+  E7  every real skill/agent body under plugins/<plugin>/{skills,agents}/ has a
+      matching .claude/{skills,agents} symlink resolving to it, and every such
+      symlink resolves to an existing body inside plugins/. Guards the two failure
+      modes of the "body in plugins/, symlink in .claude/" layout: a body added
+      without its symlink (invisible to auto-fire/install) and a dangling/orphan
+      symlink left behind by a rename or delete.
+  E8  marketplace.json plugins[] match the plugins/ subdirectories 1:1, and each
+      plugin.json has name == its directory and a non-empty version (+ source
+      pointing at ./plugins/<name>). Guards a plugin that ships but isn't declared
+      (or vice-versa) and a mis-named/unversioned manifest.
+
 Usage:
   python3 tests/lint_skills.py [--strict]   # --strict: treat warnings as errors
 """
@@ -45,11 +57,18 @@ import sys
 from pathlib import Path
 
 from _skills import (
+    AGENTS_DIR,
+    PLUGINS_DIR,
     SKILLS_DIR,
     agent_refs_in_skills,
     find_orphan_dirs,
     load_agents,
+    load_marketplace,
+    load_plugins,
     load_skills,
+    plugin_agents,
+    plugin_skills,
+    plugin_symlink_drift,
 )
 
 MIN_DESC_LEN = 40
@@ -162,8 +181,51 @@ def lint() -> int:
                     "but no agents/*.md defines it (delegation fails silently)"
                 )
 
+    # Plugin-marketplace layer (E7–E8). No-op when there's no plugins/ dir, so a
+    # plugins-less checkout/fork (claude-forge-personal) is never false-flagged.
+    if PLUGINS_DIR.exists():
+        # E7: plugins/ bodies <-> .claude/ symlinks, both directions, skills + agents.
+        sk_missing, sk_orphan = plugin_symlink_drift(plugin_skills(), SKILLS_DIR, is_agent=False)
+        ag_missing, ag_orphan = plugin_symlink_drift(plugin_agents(), AGENTS_DIR, is_agent=True)
+        for n in sk_missing:
+            errors.append(f"E7 plugin skill '{n}' has no matching .claude/skills/{n} symlink (add: ln -s ../../plugins/<plugin>/skills/{n} .claude/skills/{n})")
+        for n in sk_orphan:
+            errors.append(f"E7 .claude/skills/{n} is a symlink that doesn't resolve into plugins/ (orphan — target renamed/removed?)")
+        for n in ag_missing:
+            errors.append(f"E7 plugin agent '{n}' has no matching .claude/agents/{n}.md symlink")
+        for n in ag_orphan:
+            errors.append(f"E7 .claude/agents/{n} is a symlink that doesn't resolve into plugins/ (orphan)")
+
+        # E8: marketplace.json plugins[] <-> plugins/ subdirs, and each plugin.json.
+        mkt = load_marketplace()
+        plugins = load_plugins()
+        if mkt is None:
+            errors.append("E8 .claude-plugin/marketplace.json missing or unparseable")
+            declared = {}
+        else:
+            declared = {p.get("name"): p for p in mkt.get("plugins", []) if isinstance(p, dict)}
+        on_disk = {p["dir"] for p in plugins}
+        for name in sorted(set(declared) - on_disk):
+            errors.append(f"E8 marketplace.json declares plugin '{name}' but plugins/{name}/ does not exist")
+        for name in sorted(on_disk - set(declared)):
+            errors.append(f"E8 plugins/{name}/ exists but marketplace.json does not declare it")
+        for name, entry in sorted(declared.items()):
+            want = f"./plugins/{name}"
+            if name in on_disk and entry.get("source") != want:
+                errors.append(f"E8 marketplace plugin '{name}' source '{entry.get('source')}' != '{want}'")
+        for p in sorted(plugins, key=lambda r: r["dir"]):
+            if not p["has_manifest"]:
+                errors.append(f"[plugins/{p['dir']}] E8 missing or unparseable .claude-plugin/plugin.json")
+                continue
+            if p["name"] != p["dir"]:
+                errors.append(f"[plugins/{p['dir']}] E8 plugin.json name '{p['name']}' != directory '{p['dir']}'")
+            if not p["version"]:
+                errors.append(f"[plugins/{p['dir']}] E8 plugin.json missing `version`")
+
     strict = "--strict" in sys.argv
-    scope = f"{len(skills)} skills" + (f" + {len(agents)} agents" if agents else "")
+    n_plugins = len(load_plugins()) if PLUGINS_DIR.exists() else 0
+    scope = f"{len(skills)} skills" + (f" + {len(agents)} agents" if agents else "") + (
+        f" + {n_plugins} plugins" if n_plugins else "")
     print(f"Linted {scope} under {SKILLS_DIR.relative_to(SKILLS_DIR.parents[2])}")
     for w in warns:
         print(f"  WARN  {w}")

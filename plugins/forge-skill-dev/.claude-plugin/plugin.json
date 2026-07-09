@@ -1,0 +1,8 @@
+{
+  "name": "forge-skill-dev",
+  "version": "0.1.0",
+  "description": "claude-forge の skill 自体を磨くための開発ツール agent 集（SKILL.md の作法レビューと成果物の実測評価）。",
+  "author": {
+    "name": "issei-base"
+  }
+}
