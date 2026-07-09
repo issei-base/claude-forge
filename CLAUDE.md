@@ -37,7 +37,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 - **正確さが要る skill** (`aws-docs`) は、記憶ではなく一次ソースから答える。数値・価格・上限・コマンド構文は逐語引用し、出典を残す。Web 取得は要約モデルを挟まない生テキスト優先 (`curl`、docs は `.md`、AWS は `aws` MCP)。
 - **コミットしないもの**: `.claude/settings.local.json` / `*.local.*`、secrets (API key・token)、個人 MCP の vault/絶対パス、skill の実行時生成物、受講生の個人情報や非公開 URL (個人系 skill とその生成物は claude-forge-personal 側で管理)。
 - README に skill を 1 行追記する (新しい skill を足したら「現在の skill」表を更新)。
-- **skill / agent を新規追加・改名・削除したら、`claude-forge-dashboard` の社員名鑑 `dashboard/app/lib/company.ts` にも反映する**（使い方=duty・呼び出し語=trigger まで書く。`/toolkit` は inventory-uploader が自動更新するが `/company` は静的名簿なので手動）。確認は `python3 ~/projects/claude-forge-dashboard/ops/roster_check.py`。deploy 前にも同じチェックが走り、名鑑がズレていると deploy は止まる。
+- **skill / agent を新規追加・改名・削除したら、`claude-forge-dashboard` の社員名鑑 `dashboard/app/lib/company.ts` にも反映する**（使い方=duty・呼び出し語=trigger まで書く。`/toolkit` は inventory-uploader が自動更新するが `/company` は静的名簿なので手動）。確認は `python3 ~/projects/claude-forge-dashboard/ops/roster_check.py`。deploy 前にも同じチェックが走り、名鑑がズレていると deploy は止まる。**プロジェクト repo の `.claude/skills` に置く project skill は DEPARTMENTS ではなく `RESIDENT`（客先常駐・kind キー無し）に足す**（roster_check は `~/.claude` 配下しか見ないため、DEPARTMENTS に入れると drift で deploy が止まる）。
 
 ## PR / ship フロー
 
