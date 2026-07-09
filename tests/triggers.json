@@ -33,6 +33,13 @@
     { "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて", "expect": "banso" },
     { "query": "認証まわり全然知らないんだけど、ブラインドスポットパスして関連する unknown unknowns を洗い出してほしい", "expect": "banso" },
     { "query": "https://github.com/acme/app/issues/88 に着手して。ただし要所で私に相談しながら一緒に進めて", "expect": "banso" },
-    { "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて", "expect": "implement-issue" }
+    { "query": "https://github.com/acme/app/issues/88 を止まらず一気に PR まで完走しといて", "expect": "implement-issue" },
+
+    { "query": "サブスク管理アプリを作りたい。実装に入る前にこの計画を質問攻めにして詰めて", "expect": "grill-me" },
+    { "query": "この新機能のアイデア、グリルして。仕様の穴を一問一答で洗い出したい", "expect": "grill-me" },
+    { "query": "受講生向け講座の企画を考えてる。実装じゃなくて企画そのものを尋問して固めて", "expect": "grill-me" },
+    { "query": "この機能の計画を質問で詰めてから、そのまま伴走で一緒に実装まで進めて", "expect": "banso" },
+    { "query": "https://github.com/acme/app/issues/30 の対応方針、Issue には投稿しなくていいから一問一答の質問攻めで詰めたい", "expect": "grill-me" },
+    { "query": "この設計案どう思う？ざっくり感想だけちょうだい", "expect": "NONE" }
   ]
 }

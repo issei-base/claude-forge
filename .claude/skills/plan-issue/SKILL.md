@@ -1,7 +1,7 @@
 ---
 name: plan-issue
 argument-hint: "[issue-url]"
-description: "GitHub IssueのURLから実装計画を作成し、Issueコメントとして投稿するスキル。Issueの内容を分析し、不明点をユーザにインタビューした上で、コードベース調査を行い、第三者でも実装できる粒度の計画をIssueコメントに投稿する。doc-review スキルによるレビュー・修正ループで品質を担保する。コードは書かず計画だけを出す（実装〜PR まで一気に進めるのは [[implement-issue]]）。以下の場合に使用: (1) GitHub IssueのURLを渡されて「実装計画を立てて」と依頼された場合 (2) 「計画を作って」「設計して」とIssue URLとともに依頼された場合 (3) 「plan-issue」「/plan-issue」と呼び出された場合。issue を渡して「着手して」「やって」「実装して」のように作業開始〜実装を求められた場合は計画だけで止めず [[implement-issue]] を使う。"
+description: "GitHub IssueのURLから実装計画を作成し、Issueコメントとして投稿するスキル。Issueの内容を分析し、不明点をユーザにインタビューした上で、コードベース調査を行い、第三者でも実装できる粒度の計画をIssueコメントに投稿する。doc-review スキルによるレビュー・修正ループで品質を担保する。コードは書かず計画だけを出す（実装〜PR まで一気に進めるのは [[implement-issue]]）。以下の場合に使用: (1) GitHub IssueのURLを渡されて「実装計画を立てて」と依頼された場合 (2) 「計画を作って」「設計して」とIssue URLとともに依頼された場合 (3) 「plan-issue」「/plan-issue」と呼び出された場合。issue を渡して「着手して」「やって」「実装して」のように作業開始〜実装を求められた場合は計画だけで止めず [[implement-issue]] を使う。Issue の有無にかかわらず、計画を Issue に投稿せず一問一答の質問攻めで固めたいだけなら [[grill-me]] を使う。"
 allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(gh issue view:*), Bash(gh issue comment:*), Bash(gh issue list:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(git:*), Bash(ls:*)
 ---
 
