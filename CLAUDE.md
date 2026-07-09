@@ -5,7 +5,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 ## このリポジトリは何か
 
 - `.claude/skills/<name>/SKILL.md` 形式の skill 群。この repo を Claude Code で開くと **project スコープ**で自動発火する。
-- **スコープは開発フロー系 skill のみ**。個人用途の skill (受講生レッスン・記事消化・Mac 環境メンテ等) は private repo **claude-forge-personal** (`~/projects/claude-forge-personal`) に分離してある (2026-07-06)。新しい skill の置き場所判断: 開発ワークフロー・他人のプロジェクトでも意味がある → ここ / 受講生・自分の学習・自分のマシン・チーム内部にしか意味がない → personal 側。両 repo とも `install.sh` で `~/.claude/skills/` へ symlink するので実働は union。
+- **スコープは開発フロー系 skill のみ**。個人用途の skill (記事消化・Mac 環境メンテ等) は private repo **claude-forge-personal** (`~/projects/claude-forge-personal`) に分離してある (2026-07-06)。新しい skill の置き場所判断: 開発ワークフロー・他人のプロジェクトでも意味がある → ここ / 自分の学習・自分のマシン・チーム内部にしか意味がない → personal 側。両 repo とも `install.sh` で `~/.claude/skills/` へ symlink するので実働は union。
 - **この repo が skill の source of truth**。使い方は 2 通り: (1) **project スコープ** — claude-forge を開く、または使いたい skill を相手プロジェクトの `.claude/skills/` に `cp -R`。(2) **global** — 各 skill を `~/.claude/skills/<name>` に symlink すると全プロジェクトで使える（原本は claude-forge・編集は一箇所）。スクリプトは `Path(__file__).resolve()` で原本パスに解決されるので、symlink 経由でも data/config は claude-forge 側を見て壊れない。
 - project 設定は `.claude/settings.json`（コミット版・skill 用の権限 + `aws` MCP）。repo を開くと自動適用される。個人 / マシン固有・ランタイム上書きは `.claude/settings.local.json`（gitignore 済み）か `~/.claude/settings.json` へ（コミット版を汚さない）。
 
@@ -35,7 +35,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 - **SKILL.md の書き方 craft (model の遵守精度を上げる)**: 禁止/例外は「使うのは X のみ。通常は Y」と断定で書く (曖昧な「〜など」は AI が多用する・稀なものは全面禁止で矯正)。難判断は「A を見る→B と比べる→C を確認」の順序つき手順にする。重複を書かず粒度を揃える。lookup 参照は `references/` に種別分割し、横断ルールは `_shared/` に集約。詳細は `_template/SKILL.md.tmpl` の「書き方の作法」。
 - **SKILL.md を編集したターンは Stop hook (`skill-lint.py`) が `tests/lint_skills.py` を強制**する。`name`↔dir ズレ・description 欠落・名前重複・SKILL.md 欠落ディレクトリ (E6) があるとターンが止まる。同じ lint は CI (`.github/workflows/skill-lint.yml`) でも `--strict` で走る多層防御 (Stop hook はローカル限定)。意図的にスキップしたい時だけ環境変数 `SKILL_LINT_HOOK=0`。**lint (決定的) が見られない発火設計・craft は `skill-reviewer` agent が担う。SKILL.md を触った `ship` は §3.6 で skill-reviewer を必ず 1 回通す**(区切りで 1 回・編集のたびではない。agent 起動はモデル判断なので hook では自動化できず、ship のゲートに寄せた)。
 - **正確さが要る skill** (`aws-docs`) は、記憶ではなく一次ソースから答える。数値・価格・上限・コマンド構文は逐語引用し、出典を残す。Web 取得は要約モデルを挟まない生テキスト優先 (`curl`、docs は `.md`、AWS は `aws` MCP)。
-- **コミットしないもの**: `.claude/settings.local.json` / `*.local.*`、secrets (API key・token)、個人 MCP の vault/絶対パス、skill の実行時生成物、受講生の個人情報や非公開 URL (個人系 skill とその生成物は claude-forge-personal 側で管理)。
+- **コミットしないもの**: `.claude/settings.local.json` / `*.local.*`、secrets (API key・token)、個人 MCP の vault/絶対パス、skill の実行時生成物、第三者の個人情報や非公開 URL (個人系 skill とその生成物は claude-forge-personal 側で管理)。
 - README に skill を 1 行追記する (新しい skill を足したら「現在の skill」表を更新)。
 - **skill / agent を新規追加・改名・削除したら、`claude-forge-dashboard` の社員名鑑 `dashboard/app/lib/company.ts` にも反映する**（使い方=duty・呼び出し語=trigger まで書く。`/toolkit` は inventory-uploader が自動更新するが `/company` は静的名簿なので手動）。確認は `python3 ~/projects/claude-forge-dashboard/ops/roster_check.py`。deploy 前にも同じチェックが走り、名鑑がズレていると deploy は止まる。**プロジェクト repo の `.claude/skills` に置く project skill は DEPARTMENTS ではなく `RESIDENT`（客先常駐・kind キー無し）に足す**（roster_check は `~/.claude` 配下しか見ないため、DEPARTMENTS に入れると drift で deploy が止まる）。
 

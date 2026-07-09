@@ -105,7 +105,7 @@ git diff <base>...HEAD --name-only | grep -E '\.claude/skills/[^_/][^/]*/SKILL\.
 
 ## 3.7 leak-auditor ゲート (漏洩リスクのある diff だけ・区切りで 1 回)
 
-§2/§3.5 の grep は「値の形が既知の secret」しか拾えない。**絶対パス・受講生の個人情報・非公開 URL・生成物の混入**は形が無く grep では見えないので、該当しやすい diff のときだけ `leak-auditor` agent（Agent tool）を 1 回通す。発火条件を厳密に判定する:
+§2/§3.5 の grep は「値の形が既知の secret」しか拾えない。**絶対パス・第三者の個人情報・非公開 URL・生成物の混入**は形が無く grep では見えないので、該当しやすい diff のときだけ `leak-auditor` agent（Agent tool）を 1 回通す。発火条件を厳密に判定する:
 
 ```sh
 git diff <base>...HEAD --name-only --diff-filter=A   # (1) 新規追加ファイル
