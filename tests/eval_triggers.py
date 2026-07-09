@@ -21,6 +21,10 @@ Usage:
 
 Exit code: number of mismatches (0 = all fixtures routed as expected).
 Skips cleanly (exit 0) if the `claude` CLI is not on PATH.
+Fails fast (exit 2) if the `claude` CLI is not logged in — e.g. when run from
+inside a Claude Code session, the nested `claude -p` is unauthenticated and
+every probe would MISS with "Not logged in", which reads as a routing failure
+but is a harness failure. Run the eval from a logged-in terminal instead.
 """
 
 from __future__ import annotations
@@ -68,6 +72,16 @@ def ask_claude(prompt: str, model: str | None) -> str:
     # list with ~1-turn, ~44K-token entries.
     env = {**os.environ, "CLAUDE_CODE_USAGE_DASHBOARD_SKIP": "1"}
     out = subprocess.run(cmd, capture_output=True, text=True, timeout=180, env=env)
+    combined = out.stdout + out.stderr
+    if "Not logged in" in combined or "Please run /login" in combined:
+        print(
+            "FATAL: `claude` CLI is not logged in — every probe would MISS with "
+            "'Not logged in' (a harness failure, not a routing failure). Run this "
+            "eval from a logged-in terminal; a `claude -p` spawned inside a Claude "
+            "Code session is unauthenticated.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     # Take the last non-empty line and trim trailing punctuation/quotes.
     lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
     return (lines[-1] if lines else "").strip().strip("`\"'.").strip()
