@@ -21,10 +21,11 @@ Usage:
 
 Exit code: number of mismatches (0 = all fixtures routed as expected).
 Skips cleanly (exit 0) if the `claude` CLI is not on PATH.
-Fails fast (exit 2) if the `claude` CLI is not logged in — e.g. when run from
-inside a Claude Code session, the nested `claude -p` is unauthenticated and
-every probe would MISS with "Not logged in", which reads as a routing failure
-but is a harness failure. Run the eval from a logged-in terminal instead.
+Fails fast (exit 2) if the `claude` CLI is not logged in (`claude auth status`
+→ loggedIn: false) — every probe would MISS with "Not logged in", which reads
+as a routing failure but is a harness failure. Run `claude auth login` first.
+(A logged-in CLI works fine even when the eval is run from inside a Claude
+Code session.)
 """
 
 from __future__ import annotations
@@ -76,9 +77,8 @@ def ask_claude(prompt: str, model: str | None) -> str:
     if "Not logged in" in combined or "Please run /login" in combined:
         print(
             "FATAL: `claude` CLI is not logged in — every probe would MISS with "
-            "'Not logged in' (a harness failure, not a routing failure). Run this "
-            "eval from a logged-in terminal; a `claude -p` spawned inside a Claude "
-            "Code session is unauthenticated.",
+            "'Not logged in' (a harness failure, not a routing failure). Run "
+            "`claude auth login` and retry.",
             file=sys.stderr,
         )
         raise SystemExit(2)
