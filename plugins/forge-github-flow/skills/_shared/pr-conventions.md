@@ -193,3 +193,23 @@ gh api graphql -f query='
 
 - **対象 Project が一意に決まらない場合**（issue が複数 Project にリンクされている等）: その issue を管理する Project（通常はリポジトリのロードマップ）を選ぶ。判断できなければ更新を skip し、報告に理由を添える（複数 board を意図せず書き換えない）。
 - ID の取得方法は入口が違うため各 SKILL.md 側に置く（create-issue §3.5: project 番号既知 / implement-issue §1.5: issue URL から逆引き）。
+
+## 8. Issue メタデータの完全性（create-issue / implement-issue 共通）
+
+Issue のメタデータは「**作成時に埋める**（create-issue）・**着手時に補完する**（implement-issue）」の二段構えで完全に保つ。着手時ゲートがあるのは、Web/モバイルから手動作成された issue が skill を経由しないため。
+
+**必須セット** — repo にその仕組みが実在する場合のみ対象（無いものは skip して報告に一言添える。体系を決め打ちせず `gh label list --limit 100` と `gh api repos/{owner}/{repo}/milestones` で実体系を読む）:
+
+| 項目 | 内容 |
+|---|---|
+| 優先度ラベル | `P1/P2/P3` 等の優先度体系があれば 1 つ |
+| 分野ラベル | `area: *` 等の prefix 体系があれば 1〜2 個 |
+| Milestone | open な milestone があれば最も合う 1 つ |
+| Project: Priority | 単一選択フィールドがあれば設定。**優先度ラベルと必ず同値**（1 回の判断で両方に書く。Status と違い変更頻度が低いため、作成時・着手時の同期で二重管理を許容する。**既存の両者が食い違っていたら Project フィールドを正としてラベル側を合わせる**） |
+| Project: Type | 単一選択フィールドがあれば設定（分類基準は create-issue §3.5） |
+
+**共通ルール:**
+
+- **epic**（親 issue・子を束ねる container）は優先度・Type を空欄可（優先度は子で管理）。Status / Milestone / 分野ラベルは付ける。
+- 分類の判断がつかない項目は**まとめて 1 問だけ**ユーザに聞く（項目ごとに聞かない）。ユーザ応答を待てない文脈では skip し、完了報告に未設定項目を列挙する。
+- ユーザがラベル・milestone を明示指定した場合はそれを優先する（自動分類で上書きしない）。
