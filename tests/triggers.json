@@ -8,7 +8,7 @@
     { "query": "https://github.com/acme/app/issues/42 の実装計画を立てて Issue にコメントして", "expect": "plan-issue" },
     { "query": "この PR のレビュー指摘に対応して直して: https://github.com/acme/app/pull/7", "expect": "fix-pr" },
     { "query": "いま話した内容をタスクの Issue にまとめて作って", "expect": "create-issue" },
-    { "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて", "expect": "install-pr-reviews" },
+    { "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて", "expect": "NONE" },
     { "query": "この変更を ship して", "expect": "ship" },
     { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
     { "query": "今日の東京の天気どう？", "expect": "NONE" },
@@ -50,7 +50,7 @@
     { "query": "この PRD、仕様の抜けがないか私への質問で徹底的に洗い出して固めて。実装はまだしない", "expect": "grill-me" },
     { "query": "この運用手順書、セキュリティや運用の観点も含めて複数の専門家視点でレビューして、直すところまで回して", "expect": "doc-review" },
     { "query": "https://github.com/acme/app/pull/12 に Codex のレビューコメントが来てるので対応しておいて", "expect": "fix-pr" },
-    { "query": "新しく作った repo に、いつものレビュー体制（Codex の自動レビュー）を整えておいて", "expect": "install-pr-reviews" },
+    { "query": "新しく作った repo に、いつものレビュー体制（Codex の自動レビュー）を整えておいて", "expect": "NONE" },
     { "query": "https://github.com/acme/app/issues/5 の設計方針を第三者が実装できる粒度でまとめて、Issue にコメントで残して", "expect": "plan-issue" },
     { "query": "この差分、他のモデルにも見てもらって意見ちょうだい", "expect": "codex-secondopinion" },
 
