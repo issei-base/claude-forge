@@ -1,0 +1,33 @@
+name: Actions Lint
+
+# .github/** を触る変更だけに効く決定的ゲート。workflow は injection・過剰 permission の
+# 頻出地帯なので、zizmor (GitHub Actions 専用のセキュリティ静的解析) で機械的に見張る。
+# skill-lint.yml とは別ファイルにしている: paths フィルタは workflow 単位でしか書けず、
+# 同居させると workflow だけの変更で skill lint + テストまで走ってしまう。
+
+on:
+  pull_request:
+    paths: [".github/**"]
+  push:
+    branches: [main]
+    paths: [".github/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: actions-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      # pipx は GitHub の ubuntu ランナーにプリインストール済みで、action を増やさずに済む。
+      # バージョンは固定する — zizmor はルール追加が活発で、追従を野放しにすると
+      # 無関係な PR が突然赤くなる。更新は意図して上げる。
+      - run: pipx run --spec zizmor==1.26.1 zizmor .github/workflows/
