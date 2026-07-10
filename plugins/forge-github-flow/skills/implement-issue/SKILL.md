@@ -261,7 +261,7 @@ Skill tool:
       - 要件サマリー
       - 変更ファイルと概要
       - Deviations（計画から外れた判断とその理由）があれば Notes 見出しに含める（_shared/pr-conventions.md §1。無ければ見出しごと出さない）
-      - Closes #<Issue番号>（Issue 入力で、この PR が Issue を完了させる場合。merge 時の自動 close に必須）
+      - Closes #<Issue番号>（Issue 入力で、この PR が Issue を完了させる場合。merge 時の自動 close に必須。**Issue が実装先と別 repo のときは `Closes <owner>/<repo>#<番号>` の完全修飾で書く** — `#<番号>` だけだと実装先 repo の同番号 Issue を指す）
       - Related: <Issue URL or ドキュメントパス>（ドキュメント入力、または Issue の部分対応で完了させない場合）
 ```
 
