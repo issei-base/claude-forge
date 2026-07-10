@@ -82,7 +82,7 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 - **`ship`（対話フロー）**: push 直前（ship §3.8）で「Codex レビューをかけてから push する?」を **1 回だけ**確認する。YES → `codex-secondopinion` を**別ステップで**実行し、出力を読んでから続行（自動連結しない）。NO → そのまま push へ。**commit のたびには聞かない**（確認は ship 1 回の区切りで 1 回）。
 - **`create-pr` / `fix-pr`（非対話フロー）**: 確認を挟まない（「ユーザ介入なしで完走」の契約を守る）。ユーザー / 委譲元が「codex レビューも」と**明示した時だけ**、push 前に `codex-secondopinion` を 1 回実行する。既定では実行しない。実行するのは **Phase 1（review）+ Phase 2（triage）まで** — Phase 3 の「GO を待つ」プロンプトには入らせない（非対話契約と両立しない）。triage 結果（accept / dispute / defer の件数と代表指摘）は完了報告に添え、**自動では直していない旨も明記**する。
 - **PR 作成後に `@codex review` をコメントしない。** automatic review の有無確認・レビュー到着待ち polling もしない。
-- 例外的に GitHub 側 automatic review を残した repo（`install-pr-reviews` でオプトイン）でも、**応答ループは回さない** — 付いた指摘は人間が読み、対応するなら [[fix-pr]] に依頼する。
+- 例外的に GitHub 側 automatic review を残した repo（Codex settings で手動有効化）でも、**応答ループは回さない** — 付いた指摘は人間が読み、対応するなら [[fix-pr]] に依頼する。
 
 ## 5. CI 起動待ち・検出（`ship` / `create-pr` / `fix-pr` の CI 自動修正ループの入口）
 
