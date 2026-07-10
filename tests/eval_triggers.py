@@ -58,7 +58,11 @@ def build_prompt(skills: list[dict], query: str) -> str:
         f"{catalog}\n\n"
         "Decide which SINGLE skill should auto-activate for the user message below. "
         "If no skill clearly applies, answer NONE.\n"
-        "Respond with EXACTLY one line: the skill name verbatim, or NONE. No other text.\n\n"
+        "Respond with EXACTLY one line: one skill name from the catalog above verbatim, "
+        "or NONE. Names that appear only inside a description (e.g. a delegated agent) "
+        "are not valid answers — when a description says such a request should be "
+        "handled by an agent or plain response instead of firing the skill, the "
+        "correct answer is NONE. No other text.\n\n"
         f"User message: {query}"
     )
 
@@ -116,13 +120,19 @@ def main() -> int:
 
     misses = 0
     for c in cases:
-        got = ask_claude(build_prompt(skills, c["query"]), args.model)
+        raw = ask_claude(build_prompt(skills, c["query"]), args.model)
+        # An answer outside the catalog (e.g. an agent name quoted inside a
+        # description, like "doc-reviewer") cannot fire as a skill — the real
+        # router falls through to no-skill. Score it as NONE, but keep the raw
+        # answer visible so a description that keeps baiting it still shows up.
+        got = raw if raw in valid_names else "NONE"
+        shown = got if got == raw else f"{got}<-{raw}"
         ok = got == c["expect"]
         if not ok:
             misses += 1
         if args.verbose or not ok:
             mark = "ok  " if ok else "MISS"
-            print(f"  {mark}  expect={c['expect']:20} got={got:20} | {c['query']}")
+            print(f"  {mark}  expect={c['expect']:20} got={shown:20} | {c['query']}")
 
     total = len(cases)
     print(f"\n{total - misses}/{total} routed as expected" + (f"  ({misses} miss)" if misses else ""))
