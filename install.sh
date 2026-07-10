@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Symlink every claude-forge skill + agent into the user scope (~/.claude) so the
-# toolkit is available in *all* projects, while the single source of truth stays
-# here in claude-forge (edit once, every project sees it).
+# Symlink every claude-forge skill + agent + user-scope hook into the user scope
+# (~/.claude) so the toolkit is available in *all* projects, while the single
+# source of truth stays here in claude-forge (edit once, every project sees it).
 #
 # Idempotent: re-run any time. Uses `ln -sfn`, so it refreshes stale links and is
 # safe to run after adding a skill. Skips scaffold/retired dirs:
@@ -9,7 +9,7 @@
 #   - any dir without a SKILL.md
 #
 # Usage:
-#   ./install.sh            # link skills + agents into ~/.claude
+#   ./install.sh            # link skills + agents + hooks into ~/.claude
 #   ./install.sh --dry-run  # print what would be linked, change nothing
 set -euo pipefail
 
@@ -28,8 +28,18 @@ REPO_ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
 SKILLS_SRC="$REPO_ROOT/.claude/skills"
 AGENTS_SRC="$REPO_ROOT/.claude/agents"
+HOOKS_SRC="$REPO_ROOT/.claude/hooks"
 SKILLS_DST="$HOME/.claude/skills"
 AGENTS_DST="$HOME/.claude/agents"
+HOOKS_DST="$HOME/.claude/hooks"
+
+# user スコープ (~/.claude/settings.json) から呼ばれる hook だけを明示的に列挙する。
+# .claude/hooks/ には repo ローカル専用の hook (skill-lint.py — repo の settings.json が
+# $CLAUDE_PROJECT_DIR 経由で直に叩く) も同居するので、ディレクトリ丸ごとは張らない。
+GLOBAL_HOOKS=(
+  git-push-guard.py
+  skill-source-branch-guard.py
+)
 
 link() {  # link <src> <dst>
   local src="$1" dst="$2"
@@ -51,7 +61,7 @@ link() {  # link <src> <dst>
   fi
 }
 
-mkdir -p "$SKILLS_DST" "$AGENTS_DST"
+mkdir -p "$SKILLS_DST" "$AGENTS_DST" "$HOOKS_DST"
 
 echo "skills → $SKILLS_DST"
 for dir in "$SKILLS_SRC"/*/; do
@@ -68,6 +78,15 @@ echo "agents → $AGENTS_DST"
 for f in "$AGENTS_SRC"/*.md; do
   [ -e "$f" ] || continue
   link "$f" "$AGENTS_DST/$(basename "$f")"
+done
+
+echo "hooks → $HOOKS_DST"
+for name in "${GLOBAL_HOOKS[@]}"; do
+  if [ ! -f "$HOOKS_SRC/$name" ]; then
+    echo "  [skip] $name (not found in $HOOKS_SRC)" >&2
+    continue
+  fi
+  link "$HOOKS_SRC/$name" "$HOOKS_DST/$name"
 done
 
 if [ "$CONFLICTS" -gt 0 ]; then
