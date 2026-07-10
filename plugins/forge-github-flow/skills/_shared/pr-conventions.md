@@ -73,89 +73,33 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 | Terraform validate | 構文・参照エラーを修正する。`terraform plan` の差分そのものはユーザ判断（自動で握りつぶさない） |
 | 設定/env / 外部リソース未準備 / flaky / シークレット不足 | 自動修正対象外。サイクルを打ち切ってユーザに報告する |
 
-## 4. Codex レビュー応答ループ（`ship` / `create-pr` / `fix-pr` の Codex 応答ループ）
+## 4. Codex ローカル事前レビュー（`ship` の push 前確認ゲート / `create-pr` `fix-pr` は明示時のみ）
 
-PR 作成 / push 後に Codex GitHub review が付けた指摘へ自律対応する有限ループ。
-§3 が CI 失敗を共通化しているのと同じく、ここを唯一の定義とし、ship / create-pr / fix-pr が参照する。
-**ループは PR の review 状態を変えない**（ready なら ready のまま・draft なら draft のまま）。**ready-for-review への昇格も merge も絶対にしない**（review / merge 判断は人間・Codex に委ねる claude-forge の役割分担を壊さない）。
+**2026-07-10 方針転換**: PR 作成後に Codex GitHub review の指摘へ自律対応する応答ループ（旧 §4）は**廃止**した。理由: (1) automatic review + 応答ループ（最大 3 サイクル）のトークン消費が大きい (2) レビュー到着待ち polling（30 秒間隔 × 最大 ~5 分 × サイクル数）が PR 完了までの待ち時間を支配する。Codex GitHub automatic review 自体も全 repo で停止する方針（Codex settings 側の操作）。
 
-### 手順（1 サイクル）
+代わりに、レビューが要るときは **push / PR 作成の前に**ローカルの [`codex-secondopinion`](../codex-secondopinion/SKILL.md) を 1 回かける（PR の初版を Codex-clean にする前倒し）。
 
-1. **取得（到着を待ってから）** — `@codex review` / automatic review は**非同期**。Step 6.5 / Phase 8.5 到達時点ではまだコメントが無いことがあるので、**最新 head コミットへの review summary か新規 inline コメントが現れるまで短く polling（30 秒間隔・最大 ~5 分）してから**取得する。timeout で何も現れなければ「今サイクルはレビューなし」としてループを抜ける（待たずに毎回 skip すると、CI が無い/速い PR でループが初回から空振りする）。
-
-   ```bash
-   # 到着待ち: 最新 head への Codex review summary が出るまで（最大 ~5 分）
-   # 注意: 過去ラウンドの古い review も "Reviewed commit" を含むので、必ず現行 head sha で判定する
-   #   （でないと既存 review がある PR / 2 周目で即 break し、今回依頼分の到着前に進んで空振りする）。
-   head=$(git rev-parse --short HEAD)
-   for _ in $(seq 1 10); do
-     gh pr view <PR URL> --json reviews \
-       --jq '.reviews[]|select(.author.login|test("codex";"i"))|.body' | grep -q "$head" && break
-     sleep 30
-   done
-   # レビュー要約（review body）
-   gh pr view <PR URL> --json reviews \
-     --jq '.reviews[] | select(.author.login|test("codex";"i")) | .body'
-   # inline review comments（行コメント。Codex の主要な指摘はここに付く・review 要約とは別 endpoint）
-   # 注意: gh api が自動展開する placeholder は {owner}/{repo}/{branch} のみ。{number} は展開されない
-   #   ので PR 番号は実値に解決してから渡す（そのままだと 404 で行コメントを取りこぼす）。
-   PR=$(gh pr view <PR URL> --json number -q .number)
-   gh api "repos/{owner}/{repo}/pulls/$PR/comments" \
-     --jq '.[] | select(.user.login|test("codex";"i")) | "\(.path):\(.line // .original_line)\n\(.body)"'
-   ```
-
-   > **新規判定（収束の要）**: 対象は**最新 push したコミットへの review だけ**。Codex は review ごとに「Reviewed commit: `<sha>`」入りの summary を 1 つ出す。GitHub は前ラウンドの outdated 行コメントの `commit_id` を最新コミットへ張り替えるので、**`commit_id` だけで「新しい指摘」と判断しない**。summary の `Reviewed commit` が現行 head sha か、各コメントの `created_at` が今サイクルの `@codex review` 再依頼より後か、で新規だけを拾う。これを怠ると**対応済みの指摘を再処理して永遠に収束しない**。
-
-2. **評価＋分類** — 各指摘がまず妥当かを評価し（記憶でなく diff と安全契約に照らす）、次の 2 種に分ける。
-
-   | 種別 | 対応 |
-   |------|------|
-   | 自動修正可（lint / typo / 明白なバグ / 安全契約との不整合） | working tree を修正する |
-   | 要人間判断（設計・仕様・トレードオフ） | 自動で触らない。要約してユーザーに引き継ぐ |
-
-   同意できない指摘は **dispute** として PR にコメントで根拠を述べ、コードは直さない（黙って無視しない）。inline 行コメントを拾い損ねると主要指摘を 0 件扱いして早期終了するので、必ず `pulls/.../comments` も取得する。
-
-3. **修正** — 自動修正可と判断したものだけ working tree を修正する。
-4. **commit + push + CI 再確認** — 変更ファイルのみ `git add` し、コミット・push（Co-Authored-By は付けない・force push しない）。**push 後は最新 head の CI を待つ**（`gh pr checks <PR URL> --watch` 等）。Codex 修正が lint/test を壊していれば §3 の CI ループで直してから次へ。完了報告の CI 結果は**この最新 head のもの**にする（修正前の古い PASS を流用しない）。
-5. **再依頼** — `@codex review` を再度コメントして次サイクルの review を依頼する。
-
-   ```bash
-   gh pr comment <PR URL> --body "@codex review"
-   ```
-
-### 収束 / 停止条件
-
-次のいずれかで停止する（最大 3・CI ループと同数）。
-
-- 新規の **critical / blocking が 0**（自動修正可の指摘が出なくなった）
-- **最大 3 サイクル**到達
-- 残りが **要人間判断のみ**
-
-停止時、残った要人間判断の指摘は **要約してユーザーに引き継ぐ**（自動で触らない）。
-
-### 禁止事項（§3 の CI ループ条項と同じ精神の安全ゲート）
-
-- 指摘を黙らせるためのテスト書き換え・握りつぶしをしない（仕様 / 実装のどちらが正しいかを判断する）。
-- **ループは PR の review 状態を変えない（ready なら ready・draft なら draft）・ready-for-review 昇格も merge も絶対にしない**。
-- force push しない。`--force` / `--force-with-lease` はユーザの明示確認がある時だけ。
-- 同意できない指摘を黙って無視しない（dispute としてコメントする）。
+- **`ship`（対話フロー）**: push 直前（ship §3.8）で「Codex レビューをかけてから push する?」を **1 回だけ**確認する。YES → `codex-secondopinion` を**別ステップで**実行し、出力を読んでから続行（自動連結しない）。NO → そのまま push へ。**commit のたびには聞かない**（確認は ship 1 回の区切りで 1 回）。
+- **`create-pr` / `fix-pr`（非対話フロー）**: 確認を挟まない（「ユーザ介入なしで完走」の契約を守る）。ユーザー / 委譲元が「codex レビューも」と**明示した時だけ**、push 前に `codex-secondopinion` を 1 回実行する。既定では実行しない。実行するのは **Phase 1（review）+ Phase 2（triage）まで** — Phase 3 の「GO を待つ」プロンプトには入らせない（非対話契約と両立しない）。triage 結果（accept / dispute / defer の件数と代表指摘）は完了報告に添え、**自動では直していない旨も明記**する。
+- **PR 作成後に `@codex review` をコメントしない。** automatic review の有無確認・レビュー到着待ち polling もしない。
+- 例外的に GitHub 側 automatic review を残した repo（`install-pr-reviews` でオプトイン）でも、**応答ループは回さない** — 付いた指摘は人間が読み、対応するなら [[fix-pr]] に依頼する。
 
 ## 5. CI 起動待ち・検出（`ship` / `create-pr` / `fix-pr` の CI 自動修正ループの入口）
 
-§3 が「CI が失敗したらどう直すか」を定義するのに対し、ここは「そもそも CI が有るか・起動したか」の判定を唯一化する（§4 の Codex ループと同じく、各 SKILL.md にコピペしてドリフトさせない）。
+§3 が「CI が失敗したらどう直すか」を定義するのに対し、ここは「そもそも CI が有るか・起動したか」の判定を唯一化する（各 SKILL.md にコピペしてドリフトさせない）。
 
 push 直後は CI run がまだ登録されていないことがある。**15 秒 1 回の `no checks reported` を「CI なし」と確定してはいけない** — 後から起動する CI を取りこぼし、§3 の自動修正ループごと空振りする。次の順で判定する:
 
-1. **起動待ち** — `gh pr checks <PR URL>` を **15 秒間隔で最大 ~90 秒**見て、check が 1 つでも現れたら「CI あり」。~90 秒経っても 1 つも現れなければ「CI なし」と確定して §4（Codex 応答ループ）へ進む。
-2. **完了待ち** — CI ありなら `timeout 900 gh pr checks <PR URL> --watch --interval 30`（最大 15 分）で完走を待つ。exit 0 = 全 PASS → §4 へ。FAIL あり → §3 の分類で自動修正 → 再 push → 1 に戻る（**最大 3 サイクル**・Codex ループと同数）。
+1. **起動待ち** — `gh pr checks <PR URL>` を **15 秒間隔で最大 ~90 秒**見て、check が 1 つでも現れたら「CI あり」。~90 秒経っても 1 つも現れなければ「CI なし」と確定して各 skill の次ステップ（完了報告）へ進む。
+2. **完了待ち** — CI ありなら `timeout 900 gh pr checks <PR URL> --watch --interval 30`（最大 15 分）で完走を待つ。exit 0 = 全 PASS → 次ステップへ。FAIL あり → §3 の分類で自動修正 → 再 push → 1 に戻る（**最大 3 サイクル**）。
 
 ```bash
-# 起動待ち: check が現れるまで最大 ~90 秒。現れなければ「CI なし」で §4 へ
+# 起動待ち: check が現れるまで最大 ~90 秒。現れなければ「CI なし」で次ステップへ
 for _ in $(seq 1 6); do
   gh pr checks <PR URL> 2>/dev/null | grep -q . && break
   sleep 15
 done
-gh pr checks <PR URL>   # 空 / `no checks reported` のままなら §4 へ、あれば完了待ちへ
+gh pr checks <PR URL>   # 空 / `no checks reported` のままなら次ステップへ、あれば完了待ちへ
 ```
 
 ## 6. 対象リポジトリの特定・準備（plan-issue / implement-issue / fix-pr 共通）
