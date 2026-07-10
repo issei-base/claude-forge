@@ -1,6 +1,6 @@
 {
   "name": "forge-github-flow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Issue 起票 → 実装計画 → 実装 → PR → レビュー対応までの GitHub 開発フローを回す skill・agent と、main/master 直 push を防ぐ hook 一式。",
   "author": {
     "name": "issei-base"
