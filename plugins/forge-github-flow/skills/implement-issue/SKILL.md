@@ -302,6 +302,8 @@ EOF
 - PR 本文の `Closes #<番号>`（Phase 8）により、**人間が PR を merge した時点で Issue は GitHub が自動 close** する。「issue close → Done」の自動化が入っている Project なら board もそこで `Done` に遷移する。
 - **skill からは `gh issue close` を実行しない** — merge 前に閉じると、未マージの作業が完了に見える。却下時の reopen 作業も不要になる。
 - **board の Status は merge まで `In Progress` のまま**にする（実装は終わりレビュー・merge 待ちの状態。skill からは動かさない）。§1.5 のとおりラベルは付けていないので、外す作業も無い。
+- **`Waiting` / `Blocked` 系の列がある board でも、人間のレビュー・merge 待ちでそこへ動かさない**。それらの列は「外部の判断でブロックされ、再開に別の出来事を要する issue」（ストア審査待ち・監修待ち・外部からの回答待ち）のためのもので、merge 待ちは通常の進行中の一段階にすぎない。動かすと board 上で作業が止まって見え、merge 時の `issue close → Done` の自動遷移とも噛み合わない。
+- issue が本当に外部要因でブロックされて `Waiting` へ動かす場合は、**必ず理由コメントとセットにする** — 何を待っているか・何が起きたら再開するかを issue 上で辿れるようにする。Status だけ動かしてコメントを残さない状態を作らない。
 - PR が却下／作り直しになったら、再着手時に §1.5 をやり直す。
 
 ### worktreeのクリーンアップ
