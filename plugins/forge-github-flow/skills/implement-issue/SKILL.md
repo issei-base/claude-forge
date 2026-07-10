@@ -77,11 +77,12 @@ gh issue view <URL> --json title,body,labels,assignees,milestone,comments
 
 要件を取得したら、**Phase 2 以降（調査・実装）に入る前に**対象 Issue を「進行中」にする。この手順を後回しにしない — board を見た人が「誰も着手していない」と誤読するのを防ぐのが目的。
 
-**Step 1: アサイン + ラベル**
+「進行中」の表明は **Project board の Status フィールドのみ**で行う。repo に `in progress` 系のラベルが存在しても付けない — Status とラベルの二重管理は必ず食い違い、「Status を動かして」という依頼にラベルで応えると誤りになる。**例外は Phase 3 のコードベース調査で対象 repo の CLAUDE.md にラベル運用が明記されているのを確認できた場合のみ**（§1.5 時点ではまだ CLAUDE.md を読んでいないため判定しない。該当したら Phase 3 後に追ってラベルも付与する）。
+
+**Step 1: アサイン**
 
 ```bash
-gh issue edit <Issue URL> --add-assignee @me --add-label "in progress"
-# "in progress" ラベルが無い repo ではラベル部分だけ外して実行する
+gh issue edit <Issue URL> --add-assignee @me
 ```
 
 **Step 2: Project board の Status を In Progress に**（issue が GitHub Project にリンクされている場合）
@@ -96,7 +97,7 @@ gh api graphql -f query='
   } } } } }' -f url="<Issue URL>"
 ```
 
-出力の `nodes` が 1 件なら、その `id`（ITEM_ID）/ `project.id`（PROJECT_ID）/ `field.id`（FIELD_ID）と、`options[]` のうち `In Progress` の id（OPT_ID。無い board では Doing 等の最も近い選択肢）を読み取る。**`nodes` が 2 件以上**（複数 Project にリンク）なら、その issue を管理する Project（通常はリポジトリのロードマップ）を選ぶ — 判断できなければ board 更新を skip し、完了報告に理由を添える（複数 board を意図せず書き換えない）。
+出力の `nodes` が 1 件なら、その `id`（ITEM_ID）/ `project.id`（PROJECT_ID）/ `field.id`（FIELD_ID）と、`options[]` のうち `In Progress` の id（OPT_ID。無い board では Doing 等の最も近い選択肢）を読み取る。**`nodes` が 2 件以上**（複数 Project にリンク）なら、対象 Project の選び方は [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7**「対象 Project が一意に決まらない場合」に従う。
 
 ID が揃ったら [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7** の共通 mutation（`updateProjectV2ItemFieldValue`）で Status を `In Progress` に更新する。
 
@@ -292,7 +293,7 @@ EOF
 
 - PR 本文の `Closes #<番号>`（Phase 8）により、**人間が PR を merge した時点で Issue は GitHub が自動 close** する。「issue close → Done」の自動化が入っている Project なら board もそこで `Done` に遷移する。
 - **skill からは `gh issue close` を実行しない** — merge 前に閉じると、未マージの作業が完了に見える。却下時の reopen 作業も不要になる。
-- **ラベル**: PR 作成後に `in progress` を外す（`gh issue edit <番号> --repo <owner/repo> --remove-label "in progress"`。実装は終わりレビュー・merge 待ちの状態。board の Status は merge まで `In Progress` のままでよい）。
+- **board の Status は merge まで `In Progress` のまま**にする（実装は終わりレビュー・merge 待ちの状態。skill からは動かさない）。§1.5 のとおりラベルは付けていないので、外す作業も無い。
 - PR が却下／作り直しになったら、再着手時に §1.5 をやり直す。
 
 ### worktreeのクリーンアップ
