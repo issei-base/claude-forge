@@ -2,7 +2,7 @@
 name: create-issue
 argument-hint: "[issue-url (リライト時のみ)]"
 description: "GitHub Issue の作成・リライトを行うスキル。新規作成と既存Issueのリライト（第三者が実装できる粒度への改善）に対応。対象リポジトリはカレントの git リポジトリ（または明示指定した owner/repo）。以下の場合に使用: (1) タスクの Issue を作成したいとき (2) 「Issue作って」「タスク登録して」「チケット切って」と依頼されたとき（今は直さないバグ・後でやる作業の起票を含む） (3) 「/create-issue」と呼び出されたとき (4) 会話で議論した内容をIssueとしてまとめたいとき (5) 既存IssueのURLを渡されて「内容を修正して」「リライトして」と依頼されたとき"
-allowed-tools: Read, Glob, Grep, Bash(gh issue create:*), Bash(gh issue edit:*), Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh api:*), Bash(gh project:*), Bash(gh repo view:*), Bash(git remote:*), Bash(python3:*), Bash(base64:*)
+allowed-tools: Read, Glob, Grep, Bash(gh issue create:*), Bash(gh issue edit:*), Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh label list:*), Bash(gh api:*), Bash(gh project:*), Bash(gh repo view:*), Bash(git remote:*), Bash(python3:*), Bash(base64:*)
 ---
 
 # GitHub Issue 管理スキル
@@ -91,7 +91,7 @@ gh api repos/<owner/repo>/contents/.github/ISSUE_TEMPLATE/<file> --jq '.content'
 
 **分割する場合の手順:**
 
-1. **親 Issue（エピック）を作る** — 本文は背景・ゴール・スコープ（子の一覧は sub-issue が自動表示するので箇条書きは最小限）。`epic` ラベルを付与（無ければ作成）。
+1. **親 Issue（エピック）を作る** — 本文は背景・ゴール・スコープ（子の一覧は sub-issue が自動表示するので箇条書きは最小限）。`epic` ラベルを付与（無ければ作成）。**Milestone・分野ラベルも [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §8 の必須セットに従い設定する**（優先度・Type は §8 の epic ルールにより空欄可）。
 2. **子 Issue をそれぞれ作る** — 各子は「第三者が 1 単位で着手できる」粒度。通常の新規作成フロー（§1〜§3）に従う。
 3. **親子をリンクする**（GitHub ネイティブ sub-issue。`gh issue create` には sub-issue 化のフラグが無いので GraphQL を使う）:
 
@@ -122,7 +122,7 @@ mutation($parent:ID!,$child:ID!){
 ### 2. ユーザへのインタビュー
 
 ドラフトを提示した上で、会話から読み取れなかった**不明点がある場合のみ**質問する。
-- ラベル・関連Issueはユーザから指定がない限り空欄とする
+- 関連Issueはユーザから指定がない限り空欄とする（ラベル・Milestone は §3 で repo の体系から自動分類する — 空欄にしない）
 - **アサインは既定で自分（`@me`）**にする（ユーザが別のアサイン先を明示した場合のみそれに従う）
 - 内容の修正確認は不要（そのまま作成する）
 - 不明点がなければインタビューをスキップして即座にIssue作成に進む
@@ -133,13 +133,18 @@ mutation($parent:ID!,$child:ID!){
 
 ### 3. Issue作成
 
-`gh` CLIで作成する:
+まず repo のメタデータ体系を読み、[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§8** の必須セット（優先度ラベル・分野ラベル・Milestone）を分類してから `gh` CLI で作成する:
 
 ```bash
+gh label list --limit 100 --repo <owner/repo>          # 優先度・分野の体系を読む
+gh api repos/<owner>/<repo>/milestones                  # open milestone を読む
+
 gh issue create \
   --repo <owner/repo> \
   --title "タイトル" \
   --assignee @me \
+  --label "P2" --label "area: safety" \
+  --milestone "1.0 リリース" \
   --body "$(cat <<'EOF'
 本文
 EOF
@@ -148,12 +153,12 @@ EOF
 
 - カレントリポジトリで作成するなら `--repo` は省略可
 - **アサインは既定で `--assignee @me`（自分）**。ユーザが別アサインを明示した場合はそれに置き換える
-- ラベルはユーザから明示的に指定があった場合のみ `--label` を含める
+- ラベル・Milestone は §8 のルールに従う（repo に体系が無いものは skip・epic は優先度空欄可・判断がつかなければまとめて 1 問・ユーザ指定があれば優先）。`--label` / `--milestone` の値は例であり、実際は読み取った体系から選ぶ
 - 作成後、Issue URLをユーザに返す
 
-### 3.5 Project の Type フィールドを分類して設定（Project 管理リポジトリの場合）
+### 3.5 Project の Type / Priority フィールドを分類して設定（Project 管理リポジトリの場合）
 
-作成した Issue が GitHub Project で管理されていて、その Project に単一選択フィールド **Type** があれば、タスクの性質を分類して Type を設定する。**Type フィールドが無ければこの手順を skip**（その旨を報告に一言添える）。
+作成した Issue が GitHub Project で管理されていて、その Project に単一選択フィールド **Type** / **Priority** があれば設定する（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§8** の必須セット）。**Priority は §3 で付けた優先度ラベルと同値の選択肢を選ぶ**（判断は 1 回・書き込みは 2 箇所）。該当フィールドが無ければその項目だけ skip（その旨を報告に一言添える）。
 
 **分類の基準（タスクの性質 → Type 選択肢にマップ。実選択肢はそのProjectの定義に従い最も近いものを選ぶ）:**
 - `feature`: 新機能・新しい入力手段・モード追加
@@ -180,9 +185,9 @@ OPT_ID=$(python3 -c "import json;print(next((o['id'] for f in json.load(open('/t
 ITEM_ID=$(gh project item-add $PNUM --owner $OWNER --url "$ISSUE_URL" --format json -q .id)  # 追加済みでも item id を返す
 ```
 
-取得した ID で [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7** の共通 mutation（`updateProjectV2ItemFieldValue`）を実行して Type を設定する。
+取得した ID で [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7** の共通 mutation（`updateProjectV2ItemFieldValue`）を実行して Type を設定する。**Priority フィールドも同じ要領**（`/tmp/fields.json` から `name=='Priority'` の field id と option id を取り、§7 の mutation を撃つ）。option 名が優先度ラベルと完全一致しない場合（例: ラベル `P1` に対し選択肢が `P1 - Urgent`）は Type と同じく最も近い選択肢を選び、判断できなければ §8 の「まとめて 1 問」に従う。
 
-- **§1.5 で親子分割した場合は子 Issue それぞれに Type を設定**する。親エピックは container なので Type は基本空欄でよい。
+- **§1.5 で親子分割した場合は子 Issue それぞれに Type / Priority を設定**する。親エピックは container なので Type / Priority は基本空欄でよい（§8 の epic ルール）。
 - 対象 Project が一意に決まらない場合の選び方も §7 に従う（判断できなければユーザに確認するか skip して報告する）。
 
 ---

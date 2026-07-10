@@ -1,7 +1,7 @@
 ---
 name: implement-issue
 argument-hint: "[issue-url | doc-path]"
-allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(git:*), Bash(gh issue view:*), Bash(gh issue edit:*), Bash(gh issue comment:*), Bash(gh issue list:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(ls:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(git:*), Bash(gh issue view:*), Bash(gh issue edit:*), Bash(gh issue comment:*), Bash(gh issue list:*), Bash(gh label list:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(ls:*)
 description: "GitHub IssueのURLまたはドキュメントパスを受け取り、要件分析→コードベース調査→実装→レビューサイクル→PR作成までを自動で行うスキル。issue の作業開始（着手）の既定の入口。「このissueに着手して」「issueやって」のように issue を渡して作業を始めるよう指示されたらこれを使う（内部で実装計画を出しユーザ確認してから実装に入るので、いきなり暴走しない）。以下の場合に使用: (1) GitHub Issue URLを渡されて「実装して」「これやって」「着手して」「取り掛かって」「やり始めて」「対応して」と依頼された場合 (2) ドキュメントパスを渡されて「実装して」と依頼された場合 (3) 「/implement-issue」と呼び出された場合 (4) Issue URLやドキュメントを渡されて実装からPR作成までを一気通貫で依頼された場合。明示的に「計画だけ」「設計だけ」「調査だけ」を求められた場合は実装に入らず [[plan-issue]] / [[spike]] を使う。「伴走して」「一緒に進めて」「要所で相談して」と自分を巻き込みながらの進行を求められたら、止まらず完走するこの skill ではなく [[banso]] を使う — Issue URL 付きで「着手して」と併記されていても、相談・伴走の語があれば banso が優先で、この skill は発動しない。"
 ---
 
@@ -105,6 +105,14 @@ ID が揃ったら [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) *
 - `projectItems` が空 — その repo は Project 運用をしていない
 - Status に相当する単一選択フィールドが無い
 - token に `project` スコープが無く FORBIDDEN になる（完了報告で `gh auth refresh -s project` を案内する）
+
+**Step 3: メタデータ補完ゲート** — 欠落があれば埋めてから作業に入る
+
+手動作成（Web/モバイル）の issue は create-issue を経由せずメタデータが欠けていることがある。着手はそれを拾う唯一の確実なタイミングなので、Phase 1 で取得済みの `labels` / `milestone` と Step 2 のクエリ結果を突き合わせ、[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§8** の必須セット（優先度ラベル・分野ラベル・Milestone・Project の Priority / Type）に欠落があれば補完する:
+
+- ラベル・Milestone は issue 本文から分類して `gh issue edit --add-label` / `--milestone` で設定（体系の読み方・epic ルール・判断がつかない場合の扱いは §8）
+- Priority / Type フィールドは Step 2 の逆引きクエリに `fieldValueByName` を足して現在値を確認し、空なら §7 の mutation で設定（Priority は優先度ラベルと同値）
+- すべて設定済みなら何もしない（このゲートは補完であり、既存の値を上書きしない）
 
 ## Phase 2: 対象リポジトリ特定
 
