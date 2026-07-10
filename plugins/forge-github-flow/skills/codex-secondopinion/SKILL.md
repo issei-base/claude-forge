@@ -1,6 +1,6 @@
 ---
 name: codex-secondopinion
-description: OpenAI Codex CLI を使って、現在の git 差分にセカンドオピニオンのコードレビューをかける。**発動条件は「codex」「セカンドオピニオン」「second opinion」「別のモデル/他のモデルにも見せて」のいずれかの語が明示されたときのみ。この語が無ければ発動しない — 「この差分を厳しめに批判的にレビューして設計の穴を探して」「厳しめに見て」「批判的にレビューして」だけなら通常の Claude レビューに任せる。**「codex にレビューしてもらって」「セカンドオピニオン」「他のモデルにも見せて」「codex review」「ship する前に codex でチェックして」などで発動する。別モデルによる独立レビューの意図と併せて「codex に adversarial で」「codex で厳しめに穴を探して」「セカンドオピニオンを批判的に」と設計判断・セキュリティ・エッジケースを敵対的に突くことを求めたときは adversarial モードで実行する。
+description: OpenAI Codex CLI を使って、現在の git 差分にセカンドオピニオンのコードレビューをかける。**発動条件は「codex」「セカンドオピニオン」「second opinion」「別のモデル/他のモデルにも見せて」のいずれかの語が明示されたときのみ。この語が無ければ発動しない — 「この差分を厳しめに批判的にレビューして設計の穴を探して」「厳しめに見て」「批判的にレビューして」だけなら通常の Claude レビューに任せる。**「codex にレビューしてもらって」「セカンドオピニオン」「他のモデルにも見せて」「codex review」「ship する前に codex でチェックして」などで発動する。[[ship]] の push 前確認（§3.8）でユーザーが YES と答えたときも ship から委譲されて発動する。別モデルによる独立レビューの意図と併せて「codex に adversarial で」「codex で厳しめに穴を探して」「セカンドオピニオンを批判的に」と設計判断・セキュリティ・エッジケースを敵対的に突くことを求めたときは adversarial モードで実行する。
 allowed-tools: Read, Edit, Write, Bash(which:*), Bash(codex review:*), Bash(git rev-parse:*), Bash(git status:*), Bash(gh repo view:*)
 ---
 
@@ -86,7 +86,7 @@ Phase 1 の verbatim を壊さずに、その**後ろで** Codex の各指摘を
 
 **ユーザーが修正を望んだときだけ**入る。Phase 2 の **accept 分のみ** working tree にドラフト修正を当て、`codex review` を更新後の diff に再実行して収束を確認する。dispute / defer には手を付けない。
 
-> 上限が `_shared/pr-conventions.md` §4（PR review・最大 3 サイクル）より短いのは意図的 — こちらは push 前のローカル差分で 1 周が軽く、2 周で収束しなければ人間判断に渡す方が速いため。
+> 上限を 2 周に抑えるのは意図的 — push 前のローカル差分は 1 周が軽く、2 周で収束しなければ人間判断に渡す方が速いため。
 
 ループ（最大 2 周）:
 
