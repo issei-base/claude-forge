@@ -178,15 +178,12 @@ OPT_ID=$(python3 -c "import json;print(next((o['id'] for f in json.load(open('/t
 # FIELD_ID が空（Type フィールド無し）なら skip
 
 ITEM_ID=$(gh project item-add $PNUM --owner $OWNER --url "$ISSUE_URL" --format json -q .id)  # 追加済みでも item id を返す
-
-gh api graphql -f query='
-  mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){
-    updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } }
-  }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$FIELD_ID" -f o="$OPT_ID"
 ```
 
+取得した ID で [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7** の共通 mutation（`updateProjectV2ItemFieldValue`）を実行して Type を設定する。
+
 - **§1.5 で親子分割した場合は子 Issue それぞれに Type を設定**する。親エピックは container なので Type は基本空欄でよい。
-- 対象 Project が一意に決まらない場合（複数紐づくなど）は、その issue を管理する Project（通常はリポジトリのロードマップ）を選ぶ。判断できなければユーザに確認するか skip して報告する。
+- 対象 Project が一意に決まらない場合の選び方も §7 に従う（判断できなければユーザに確認するか skip して報告する）。
 
 ---
 
