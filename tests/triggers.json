@@ -1,5 +1,5 @@
 {
-  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3).",
+  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3). The last block ('-- adversarial 2026-07-10 --') is the Fable-window sweep: paraphrases that must still fire (チケット切って→create-issue, プルリク→ship, 他のモデルにも→codex-secondopinion) and near-miss negatives that must NOT (コミットだけ, PR の説明, 別の観点, issue 要約, AWS 実装コード).",
   "cases": [
     { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
     { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-secondopinion" },
@@ -40,6 +40,26 @@
     { "query": "社内勉強会の企画を考えてる。実装じゃなくて企画そのものを尋問して固めて", "expect": "grill-me" },
     { "query": "この機能の計画を質問で詰めてから、そのまま伴走で一緒に実装まで進めて", "expect": "banso" },
     { "query": "https://github.com/acme/app/issues/30 の対応方針、Issue には投稿しなくていいから一問一答の質問攻めで詰めたい", "expect": "grill-me" },
-    { "query": "この設計案どう思う？ざっくり感想だけちょうだい", "expect": "NONE" }
+    { "query": "この設計案どう思う？ざっくり感想だけちょうだい", "expect": "NONE" },
+
+    { "query": "きりも良いし、ここまでの変更をプルリクにしといて", "expect": "ship" },
+    { "query": "このバグ、今は直さないからチケットだけ切っといて", "expect": "create-issue" },
+    { "query": "DynamoDB の TTL って実際の削除までどのくらい遅延しうる？公式の記載を確認して", "expect": "aws-docs" },
+    { "query": "キャッシュ層、Redis と Memcached どっちが妥当か調べて採用判断の材料をちょうだい", "expect": "spike" },
+    { "query": "丸投げはしたくない。決めどころは私に聞きつつ、複数案を見せながらこの機能を作って", "expect": "banso" },
+    { "query": "この PRD、仕様の抜けがないか私への質問で徹底的に洗い出して固めて。実装はまだしない", "expect": "grill-me" },
+    { "query": "この運用手順書、セキュリティや運用の観点も含めて複数の専門家視点でレビューして、直すところまで回して", "expect": "doc-review" },
+    { "query": "https://github.com/acme/app/pull/12 に Codex のレビューコメントが来てるので対応しておいて", "expect": "fix-pr" },
+    { "query": "新しく作った repo に、いつものレビュー体制（Codex の自動レビュー）を整えておいて", "expect": "install-pr-reviews" },
+    { "query": "https://github.com/acme/app/issues/5 の設計方針を第三者が実装できる粒度でまとめて、Issue にコメントで残して", "expect": "plan-issue" },
+    { "query": "この差分、他のモデルにも見てもらって意見ちょうだい", "expect": "codex-secondopinion" },
+
+    { "query": "コミットして push だけしといて。PR はまだ作らなくていい", "expect": "NONE" },
+    { "query": "この PR がどんな変更なのか内容を説明して: https://github.com/acme/app/pull/30", "expect": "NONE" },
+    { "query": "別の観点からもこの差分をレビューしてみて", "expect": "NONE" },
+    { "query": "https://github.com/acme/app/issues/44 の内容を要約して教えて", "expect": "NONE" },
+    { "query": "S3 に署名付き URL でアップロードするコードを書いて", "expect": "NONE" },
+    { "query": "Aurora 採用の判断はもう済んでる。移行の実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/61", "expect": "plan-issue" },
+    { "query": "この実装差分、複数観点でレビューして修正まで回して", "expect": "NONE" }
   ]
 }
