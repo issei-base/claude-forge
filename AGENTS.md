@@ -4,10 +4,8 @@ This repository contains reusable agent skills. When working here with Codex, ke
 
 ## PR / Ship Flow
 
-- PR creation is handled by Claude Code's `.claude/skills/ship` and `.claude/skills/create-pr` workflows.
-- Codex should not create branches, commits, pushes, or PRs for this repository's normal workflow.
-- If the user asks Codex to create or open a PR, explain that PR creation is Claude-owned here and offer to review the local diff or an existing PR instead.
-- Codex may request or perform reviews via Codex GitHub code review, `@codex review`, or local `codex review` when asked.
+- 2026-07-11: the former "PR creation is Claude-owned / Codex is review-only" boundary was withdrawn. Codex may create branches, commits, pushes, and PRs here.
+- Follow the same conventions as Claude Code's ship / create-pr workflows: feature branch (never push to main directly), Japanese commit messages and PR title/body, explicit-path `git add` (no `git add -A`), no force push.
 - Never run `gh pr merge`; merge is a human action.
 
 ## Review Guidelines
@@ -25,6 +23,5 @@ Write all review comments, summaries, and explanations in Japanese (日本語). 
 
 ## Automation Boundary
 
-- Codex is review-only for PR operations in this repository.
-- Codex may request a one-off GitHub review with `@codex review` on an existing PR if automatic Codex reviews are not known to be enabled.
-- Enabling repository-wide Codex automatic reviews is done in Codex GitHub code review settings, not only by editing files in this repository.
+- GitHub automatic Codex reviews are OFF for this repository (disabled 2026-07-10). Do not post `@codex review` on PRs; review happens locally before push (`/codex:review`).
+- Enabling repository-wide Codex automatic reviews is done in Codex GitHub code review settings, not by editing files in this repository.

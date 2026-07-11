@@ -20,8 +20,6 @@ claude-forge/                    # 1 repo・複数プラグインの marketplace
 │   └── forge-skill-dev/        #   skill 開発ツール
 │       ├── .claude-plugin/plugin.json
 │       └── agents/             #   skill-reviewer.md, skill-empirical-tester.md
-├── .agents/
-│   └── skills/ship/            # Codex repo-scoped stub。PR 作成は Claude に任せ、Codex は review-only
 ├── .codex/
 │   ├── config.toml             # Codex project config。Stop hook で skill lint を走らせる
 │   └── hooks/skill-lint.py     # Codex Stop hook: tests/lint_skills.py を実行
@@ -53,15 +51,15 @@ claude-forge/                    # 1 repo・複数プラグインの marketplace
 
 ## PR 作成とレビューの役割分担
 
-claude-forge では **PR 作成は Claude Code、PR レビューは Codex** に分ける。レビューは GitHub 側の automatic review ではなく、**push 前の `/codex:review`**（openai 公式 codex プラグイン `codex@openai-codex`・ユーザー起動専用）で行う（2026-07 方針転換。2026-07-11 に自作 `codex-secondopinion` skill を廃止しプラグインへ一本化）。
+claude-forge では **PR 作成は Claude Code / Codex のどちらからでもよい**（2026-07-11 に「PR 作成は Claude 一本化・Codex は review-only」を撤回）。レビューは GitHub 側の automatic review ではなく、**push 前の `/codex:review`**（openai 公式 codex プラグイン `codex@openai-codex`・ユーザー起動専用）で行う（2026-07 方針転換。2026-07-11 に自作 `codex-secondopinion` skill を廃止しプラグインへ一本化）。
 
 | 役割 | 担当 | 発火/操作 |
 |---|---|---|
-| PR 作成 | Claude Code | Claude の `ship` skill / `create-pr` skill |
+| PR 作成 | Claude Code / Codex どちらでも | Claude は `ship` / `create-pr` skill。Codex も同じ規約（feature branch・日本語コミット・main 直 push 禁止）で可 |
 | PR レビュー | Codex（openai codex プラグイン） | `ship` の push 前確認 → ユーザーが `/codex:review` を実行（Claude は案内のみ）。GitHub 側 automatic review は既定オフ |
 | merge 判断 | 人間 | GitHub UI で内容を見て手動 merge |
 
-Codex はこの repo では branch / commit / push / PR 作成をしない。`.agents/skills/ship` は、Codex に「PR 作って」と頼まれた時に Claude の `ship` skill へ戻すための review-only stub。
+2026-07-11 に「Codex はレビュー専任・PR を作らない」を撤回し、Codex も branch / commit / push / PR 作成をしてよい（merge は引き続き人間）。旧 review-only stub（`.agents/skills/ship`）は削除済み。
 
 > PR 関連の詳しい運用（Codex review の有効化・Branch Protection・運用フロー）は後半の [PR レビュー運用](#pr-レビュー運用) に集約。ここは役割分担の要約のみ。
 
@@ -128,7 +126,6 @@ ln -sfn ~/projects/claude-forge/.claude/agents/doc-reviewer.md ~/.claude/agents/
 | `.claude/skills/` | 実体は持たず `plugins/<plugin>/skills/<name>` への**相対 symlink** (+ 配布しない雛形 `_template/`)。開くと project スコープで自動発火 or `/skill-name` で明示呼び |
 | `.claude/agents/` | `plugins/<plugin>/agents/<name>.md` への**相対 symlink** |
 | `.claude/hooks/` | `skill-lint.py` は実体 (repo 開発専用・配布しない)、`git-push-guard.py` は `plugins/forge-github-flow/hooks/` への **symlink**。`settings.json` の `hooks` ブロックから参照される |
-| `.agents/skills/` | Codex repo-scoped skills。現状 `ship` は PR 作成を Claude に任せる review-only stub |
 | `.codex/` | Codex project config / hooks。Stop hook で `tests/lint_skills.py` を走らせる |
 | `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) |
 | `.claude/settings.json` | project スコープ設定。skill 共通の権限 + `aws` MCP + `hooks`（**サニタイズ済み・公開可なものだけ**） |
