@@ -183,7 +183,7 @@ PR修正は新規実装より変更スコープが小さいため、サイクル
 
 ## Phase 7: コミット・push
 
-> **Codex レビュー**: 非対話 skill なので要否の確認は挟まない。ユーザーが「codex レビューも」と**明示した時だけ**、ここ（push 前）で [`codex-secondopinion`](../codex-secondopinion/SKILL.md) を **Phase 1(review) + Phase 2(triage) までで** 1 回実行する（Phase 3 の GO 待ちには入らせない。[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義）。triage 結果は Phase 10 の報告に添える（自動では直さない）。**push 後の `@codex review` / Codex 応答ループは廃止済み**（2026-07 方針転換）。push 前の自己検証は Phase 6 のローカル `doc-impl-reviewer` ループが担う。
+> **Codex レビュー**: 組み込まない。レビューは openai codex プラグインの `/codex:review`（ユーザー起動専用）に一本化済みで、非対話フローとは両立しない（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義）。要るときはユーザーがこの skill の前後（起動前 or push 後）に自分で実行する。**push 後の `@codex review` / Codex 応答ループは廃止済み**（2026-07 方針転換）。push 前の自己検証は Phase 6 のローカル `doc-impl-reviewer` ループが担う。
 
 ```bash
 git status
