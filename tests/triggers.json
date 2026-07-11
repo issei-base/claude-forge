@@ -1,8 +1,8 @@
 {
-  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3). The last block ('-- adversarial 2026-07-10 --') is the Fable-window sweep: paraphrases that must still fire (チケット切って→create-issue, プルリク→ship, 他のモデルにも→codex-secondopinion) and near-miss negatives that must NOT (コミットだけ, PR の説明, 別の観点, issue 要約, AWS 実装コード).",
+  "_comment": "Trigger fixtures for eval_triggers.py. Each case is a representative user message and the skill that SHOULD auto-fire (or NONE). 'expect' must equal a skill dir name, or 'NONE'. The first block is one clean case per skill; the second block ('-- disambiguation --') stress-tests skills whose descriptions overlap (cc-tune vs doc-illustrate, explain-article vs cc-tune = 理解 vs 取り込み診断, explain-article vs ざっと要約 = NONE, ship vs create-pr, doc-review over-firing on light reviews). Add cases as you discover real mis-fires from the usage dashboard (P3). The last block ('-- adversarial 2026-07-10 --') is the Fable-window sweep: paraphrases that must still fire (チケット切って→create-issue, プルリク→ship) and near-miss negatives that must NOT (コミットだけ, PR の説明, 別の観点, issue 要約, AWS 実装コード). Codex review queries expect NONE since 2026-07-11: the codex-secondopinion skill was retired for the openai codex plugin, whose /codex:review is user-invoked only (Claude just points to the command).",
   "cases": [
     { "query": "Lambda の同時実行数の上限って公式ドキュメントだといくつ？", "expect": "aws-docs" },
-    { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "codex-secondopinion" },
+    { "query": "この差分、codex にもセカンドオピニオンでレビューしてもらって", "expect": "NONE" },
     { "query": "この設計ドキュメントを多観点でレビューして修正まで回して", "expect": "doc-review" },
     { "query": "https://github.com/acme/app/issues/42 を実装して PR まで出して", "expect": "implement-issue" },
     { "query": "https://github.com/acme/app/issues/42 の実装計画を立てて Issue にコメントして", "expect": "plan-issue" },
@@ -19,7 +19,7 @@
     { "query": "/create-pr でこの変更を PR にして", "expect": "create-pr" },
     { "query": "コミットメッセージを確認しながら対話的に PR を出して", "expect": "ship" },
     { "query": "このドキュメント、1人でざっと軽くレビューだけして", "expect": "NONE" },
-    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "codex-secondopinion" },
+    { "query": "この差分、codex で adversarial に厳しめにレビューして設計の穴を突いて", "expect": "NONE" },
     { "query": "この差分を厳しめに批判的にレビューして設計の穴を探して", "expect": "NONE" },
     { "query": "認証方式は OAuth で行くと決めたので、第三者が実装できる粒度で実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/9", "expect": "plan-issue" },
     { "query": "この古い HTTP クライアントライブラリで HTTP/2 の要件を満たせるか、小さく試して採用可否を判断したい", "expect": "spike" },
@@ -52,7 +52,7 @@
     { "query": "https://github.com/acme/app/pull/12 に Codex のレビューコメントが来てるので対応しておいて", "expect": "fix-pr" },
     { "query": "新しく作った repo に、いつものレビュー体制（Codex の自動レビュー）を整えておいて", "expect": "NONE" },
     { "query": "https://github.com/acme/app/issues/5 の設計方針を第三者が実装できる粒度でまとめて、Issue にコメントで残して", "expect": "plan-issue" },
-    { "query": "この差分、他のモデルにも見てもらって意見ちょうだい", "expect": "codex-secondopinion" },
+    { "query": "この差分、他のモデルにも見てもらって意見ちょうだい", "expect": "NONE" },
 
     { "query": "コミットして push だけしといて。PR はまだ作らなくていい", "expect": "NONE" },
     { "query": "この PR がどんな変更なのか内容を説明して: https://github.com/acme/app/pull/30", "expect": "NONE" },

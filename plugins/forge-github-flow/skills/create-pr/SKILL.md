@@ -36,7 +36,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(grep:*), Bash(git stat
 
 全ステップをユーザ介入なしで完了させること。
 
-> **Codex レビュー**: 非対話 skill なので要否の確認は挟まない。ユーザー / 委譲元が「codex レビューも」と**明示した時だけ**、Step 4 の push 前に [`codex-secondopinion`](../codex-secondopinion/SKILL.md) を **Phase 1(review) + Phase 2(triage) までで** 1 回実行する（Phase 3 の GO 待ちには入らせない。[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義）。既定では実行しない。**PR 作成後の `@codex review` / Codex 応答ループは廃止済み**（2026-07 方針転換）。
+> **Codex レビュー**: 組み込まない。レビューは openai codex プラグインの `/codex:review`（ユーザー起動専用）に一本化済みで、非対話フローとは両立しない（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §4 が唯一の定義）。要るときはユーザーがこの skill の前後に自分で実行する。**PR 作成後の `@codex review` / Codex 応答ループは廃止済み**（2026-07 方針転換）。
 
 ## 🚫 絶対に守るルール（claude-forge 共通方針）
 
@@ -104,7 +104,7 @@ git commit -m "<コミットメッセージ>"
 
 ## Step 4: プッシュ
 
-> ユーザー / 委譲元が「codex レビューも」と明示していれば、push する前にここで [`codex-secondopinion`](../codex-secondopinion/SKILL.md) を Phase 2(triage) まで 1 回実行する（冒頭の注記・`_shared/pr-conventions.md` §4 参照）。明示が無ければスキップしてそのまま push する。
+> Codex レビューはここでは実行しない（`/codex:review` はユーザー起動専用 — 冒頭の注記・`_shared/pr-conventions.md` §4 参照）。そのまま push する。
 
 ```bash
 # push 前の hard guard
@@ -254,7 +254,7 @@ PR を作成しました: <PR URL>
 ```
 
 CI が PASS 以外で終わった場合は、失敗ジョブ名と直近の失敗概要を 1-3 行で添える。
-明示依頼で push 前に codex-secondopinion を実行した場合は、triage 結果（accept / dispute / defer の件数と代表指摘）を添える（**自動では直していない**旨も明記）。
+Codex レビューが要りそうな差分（設計判断を含む・変更が大きい等）なら、報告の末尾に「`/codex:review` でのレビューを推奨」と 1 行添える（実行はしない）。
 **merge はしない** — CI / レビューの結果をユーザが読んで手動 merge する。
 
 ## エラーハンドリング

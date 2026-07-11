@@ -73,14 +73,14 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 | Terraform validate | 構文・参照エラーを修正する。`terraform plan` の差分そのものはユーザ判断（自動で握りつぶさない） |
 | 設定/env / 外部リソース未準備 / flaky / シークレット不足 | 自動修正対象外。サイクルを打ち切ってユーザに報告する |
 
-## 4. Codex ローカル事前レビュー（`ship` の push 前確認ゲート / `create-pr` `fix-pr` は明示時のみ）
+## 4. Codex ローカル事前レビュー（openai codex プラグイン `/codex:review` — ユーザー起動専用）
 
 **2026-07-10 方針転換**: PR 作成後に Codex GitHub review の指摘へ自律対応する応答ループ（旧 §4）は**廃止**した。理由: (1) automatic review + 応答ループ（最大 3 サイクル）のトークン消費が大きい (2) レビュー到着待ち polling（30 秒間隔 × 最大 ~5 分 × サイクル数）が PR 完了までの待ち時間を支配する。Codex GitHub automatic review 自体も全 repo で停止する方針（Codex settings 側の操作）。
 
-代わりに、レビューが要るときは **push / PR 作成の前に**ローカルの [`codex-secondopinion`](../codex-secondopinion/SKILL.md) を 1 回かける（PR の初版を Codex-clean にする前倒し）。
+**2026-07-11 追補**: 自作の `codex-secondopinion` skill を廃止し、openai 公式の codex プラグイン（`codex@openai-codex`）に一本化した。レビューが要るときは **push / PR 作成の前に** `/codex:review`（設計判断・仮定まで突かせたいなら `/codex:adversarial-review`）を 1 回かける（PR の初版を Codex-clean にする前倒し）。両コマンドは `disable-model-invocation: true` の**ユーザー起動専用** — Claude は自然言語で「codex にレビューして」と頼まれても `codex` CLI を直接叩かず、該当コマンドの実行を**案内する**（起動経路をプラグインのジョブ管理に一本化するため）。
 
-- **`ship`（対話フロー）**: push 直前（ship §3.8）で「Codex レビューをかけてから push する?」を **1 回だけ**確認する。YES → `codex-secondopinion` を**別ステップで**実行し、出力を読んでから続行（自動連結しない）。NO → そのまま push へ。**commit のたびには聞かない**（確認は ship 1 回の区切りで 1 回）。
-- **`create-pr` / `fix-pr`（非対話フロー）**: 確認を挟まない（「ユーザ介入なしで完走」の契約を守る）。ユーザー / 委譲元が「codex レビューも」と**明示した時だけ**、push 前に `codex-secondopinion` を 1 回実行する。既定では実行しない。実行するのは **Phase 1（review）+ Phase 2（triage）まで** — Phase 3 の「GO を待つ」プロンプトには入らせない（非対話契約と両立しない）。triage 結果（accept / dispute / defer の件数と代表指摘）は完了報告に添え、**自動では直していない旨も明記**する。
+- **`ship`（対話フロー）**: push 直前（ship §3.8）で「Codex レビュー（`/codex:review`）をかけてから push する?」を **1 回だけ**確認する。YES → ユーザー自身が `/codex:review` を実行するのを待ち、結果を読んでから続行（Claude は代行しない）。NO → そのまま push へ。**commit のたびには聞かない**（確認は ship 1 回の区切りで 1 回）。
+- **`create-pr` / `fix-pr`（非対話フロー）**: Codex レビューを組み込まない（ユーザー起動専用コマンドは「ユーザ介入なしで完走」の契約と両立しない）。要るときはユーザーが skill 起動前に `/codex:review` を済ませるか、PR 作成後に自分で実行する。
 - **PR 作成後に `@codex review` をコメントしない。** automatic review の有無確認・レビュー到着待ち polling もしない。
 - 例外的に GitHub 側 automatic review を残した repo（Codex settings で手動有効化）でも、**応答ループは回さない** — 付いた指摘は人間が読み、対応するなら [[fix-pr]] に依頼する。
 
