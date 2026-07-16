@@ -29,6 +29,17 @@
     { "query": "https://github.com/acme/app/issues/12 取り掛かって、やり始めて", "expect": "implement-issue" },
     { "query": "この issue まだコードは書かず、実装計画だけ立てて Issue にコメントして: https://github.com/acme/app/issues/77", "expect": "plan-issue" },
 
+    { "query": "https://github.com/acme/app/issues/12 と https://github.com/acme/app/issues/13 まとめて着手して", "expect": "orchestrate" },
+    { "query": "#21 #22 #23 並列でやって。全部 PR まで持っていって", "expect": "orchestrate" },
+    { "query": "いま話した改善案を issue にして、そのまま着手まで一気にやって", "expect": "orchestrate" },
+    { "query": "この 2 つの issue、実装はまだしないでそれぞれ実装計画だけコメントして", "expect": "plan-issue" },
+    { "query": "この 3 つの issue、要所で私に相談しながら一緒に進めたい", "expect": "banso" },
+
+    { "query": "検索ボックスに 2 文字未満なら API を呼ばないデバウンス処理を実装して", "expect": "tdd" },
+    { "query": "この日付関数、月末に 1 日ずれるバグがあるみたいだから直して", "expect": "tdd" },
+    { "query": "quantityBounds のモジュールにテストが無いから足しておいて", "expect": "tdd" },
+    { "query": "README のセットアップ手順が古くなってるので直しておいて", "expect": "NONE" },
+
     { "query": "この通知機能、伴走しながら一緒に作ろう。勝手に完走せず要所で相談して、私も理解しながら進めたい", "expect": "banso" },
     { "query": "この設計、盲点も洗い出しながら複数案を見せて一緒に決めて進めて", "expect": "banso" },
     { "query": "認証まわり全然知らないんだけど、ブラインドスポットパスして関連する unknown unknowns を洗い出してほしい", "expect": "banso" },
