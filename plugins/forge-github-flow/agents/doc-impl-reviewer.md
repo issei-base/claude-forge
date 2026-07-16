@@ -23,6 +23,8 @@ color: red
 
 **spec (仕様整合性)** — 仕様の機能がすべて実装されているか (未実装の洗い出し)、仕様に無い余計な挙動が無いか、エッジケース・境界値・異常系が仕様どおりか。
 
+**tdd (テスト駆動の証跡)** — 完了条件・テストケース一覧が渡された場合に検証する: ①各ケースに対応するテストコードが実在するか（1 ケースずつ突き合わせる） ②「テストを先に落とした」証跡（red→green の報告）が妥当か — **回帰固定テスト**（既に正しい振る舞いをそのまま固定する契約テスト・ゴールデン等）の申告は、対象コードが diff 前から存在していたかを実際の diff で裏取りしてから正当と認める（申告のみを根拠に免除しない）。根拠が無い・diff と矛盾する申告、およびそれ以外で red の証跡が無いテストは「振る舞いを検証できていない」疑いとして指摘する ③承認済みテストケースが黙って削除・弱体化（アサートの緩和・skip 化）されていないか。
+
 **error_handling** — 失敗しうる箇所 (I/O・ネットワーク・パース) のエラー処理、例外の握り潰し (silent failure)、リソースリーク。
 
 **quality (保守性)** — 命名・責務分割・重複 (DRY)、過度な複雑さ・デッドコード・マジックナンバー、テスト可能性と必要なテストの欠落。
@@ -51,7 +53,7 @@ color: red
   "issues": [
     {
       "severity": "critical|major|minor",
-      "category": "security|spec|quality|error_handling|consistency|performance",
+      "category": "security|spec|tdd|quality|error_handling|consistency|performance",
       "confidence": 90,
       "file": "src/feature.ts",
       "line": 45,
