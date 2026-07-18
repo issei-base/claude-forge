@@ -158,7 +158,7 @@ EOF
 
 ### 3.1 nightly（夜間自動着手）適性の判定
 
-`nightly` ラベルは「夜間ループが人間不在で implement-issue を完走してよい」という事前承認のキュー。まず repo の label 一覧（Step 3 で取得済み）に `nightly` があるか見る。**無い repo では、ユーザが nightly を明示していてもこの判定ごと skip する**（存在しないラベルを `--label` に渡すと `gh issue create` が失敗するため。ラベルの新規作成もしない — 夜間ループを運用していない repo では意味を持たないため）。**ラベルがある repo に限り**、ユーザが nightly の要否を明示していたらそれに従い、明示が無ければ以下の 4 条件で判定する。
+`nightly` ラベルは「夜間ループが人間不在で implement-issue を完走してよい」という事前承認。**このラベル単独では着手されない** — 夜間ループは `nightly` ラベル **かつ** Project の Status が `Todo`（＝今週やると人間が選んだ）の AND で対象を決める（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§9**）。ここで付けるのは「無人で回してよい」という適性の印だけで、いつ回すかは weekly-plan が決める。まず repo の label 一覧（Step 3 で取得済み）に `nightly` があるか見る。**無い repo では、ユーザが nightly を明示していてもこの判定ごと skip する**（存在しないラベルを `--label` に渡すと `gh issue create` が失敗するため。ラベルの新規作成もしない — 夜間ループを運用していない repo では意味を持たないため）。**ラベルがある repo に限り**、ユーザが nightly の要否を明示していたらそれに従い、明示が無ければ以下の 4 条件で判定する。
 
 以下を**すべて**満たすときだけ付与する。1 つでも欠けたら見送り:
 
@@ -195,6 +195,8 @@ OPT_ID=$(python3 -c "import json;print(next((o['id'] for f in json.load(open('/t
 
 ITEM_ID=$(gh project item-add $PNUM --owner $OWNER --url "$ISSUE_URL" --format json -q .id)  # 追加済みでも item id を返す
 ```
+
+**Status は触らない** — 起票時点では「今週やる」が決まっていないので `Backlog`（board の既定）のまま残す。`Todo` に上げるのは週初めの選定＝ [[weekly-plan]] の仕事で、ここで先回りしない（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§9**）。ユーザが「これは今週やる」と明示した場合だけ `Todo` に設定してよい。
 
 取得した ID で [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§7** の共通 mutation（`updateProjectV2ItemFieldValue`）を実行して Type を設定する。**Priority フィールドも同じ要領**（`/tmp/fields.json` から `name=='Priority'` の field id と option id を取り、§7 の mutation を撃つ）。option 名が優先度ラベルと完全一致しない場合（例: ラベル `P1` に対し選択肢が `P1 - Urgent`）は Type と同じく最も近い選択肢を選び、判断できなければ §8 の「まとめて 1 問」に従う。
 
