@@ -93,8 +93,8 @@ git diff <base>...HEAD --name-only | grep -E '\.claude/skills/[^_/][^/]*/SKILL\.
 
 - 1 行でもヒット → 変更した SKILL.md ごとに `skill-reviewer` agent（Agent tool）を回す。決定的 lint（Stop hook / CI）が見られない**発火設計・断定の書き方・順序つき手順・重複/粒度・方針整合**を見るのがこの agent の役割で、lint とは別レイヤ。
   - さらに**新規 skill の追加、または手順・成果物の挙動に関わる実質変更**のときは、静的な skill-reviewer に加えて `skill-empirical-tester` agent（Agent tool）も 1 回通す。代表タスクに当てて**発火後の成果物の質を実測**し、失敗パターンを SKILL.md へ還元するのがこの agent の役割（skill-reviewer が静的な作法、empirical-tester が実測、と別レイヤ）。**description だけの微修正・文言調整では回さない**（空振りコストを避ける）。この agent が repo に無ければスキップ。
-- ヒット無し → スキップして §3.7 へ。
-- `skill-reviewer` agent がこの repo に無い（skill だけ別 repo にコピーした等） → スキップして §3.7 へ。
+- ヒット無し → スキップして §3.65 へ。
+- `skill-reviewer` agent がこの repo に無い（skill だけ別 repo にコピーした等） → スキップして §3.65 へ。
 
 **指摘の扱い**（ここは §3.5 と同じ安全領域なので基本は自走）:
 - **確信度が高く明確な craft の欠陥**（name↔dir 以外の発火設計ミス・曖昧な禁止表現・重複記述）→ その場で SKILL.md を直し、直した分は再 stage して commit をやり直す（§3.5 の `git reset --soft HEAD~1` 手順に従う・`--amend` は使わない）。
@@ -102,6 +102,31 @@ git diff <base>...HEAD --name-only | grep -E '\.claude/skills/[^_/][^/]*/SKILL\.
 - 直しても直さなくてもよい軽微な提案 → §6 報告に列挙する。
 
 > lint の指摘（E1–E6/W1–W3）はこのゲートの対象外。それは Stop hook / CI が別途担保する。ここは「lint が見られない判断レイヤ」だけを見る。
+
+## 3.65 名鑑ゲート（skill / agent を新規追加・改名・削除した時だけ）
+
+`/company`（社員名鑑 `company.ts`）と `/flows`（運行図 `flows.ts`）は**手書きの静的データ**で自動更新されない（`/toolkit` だけが inventory-uploader で自動）。反映漏れは dashboard の deploy を止める。**書き足したかを記憶に預けない**ため、push 前に機械で検算する。発火条件:
+
+```sh
+git diff <base>...HEAD --name-status | grep -E '^(A|D|R)' | grep -E '(plugins/[^/]+/(skills|agents)/|\.claude/(skills|agents)/)'
+```
+
+- ヒット無し（既存 skill の中身を直しただけ・skill を触っていない）→ スキップして §3.7 へ。
+- dashboard repo（`~/projects/claude-forge-dashboard`）が無い → スキップして §3.7 へ。
+- 1 行でもヒット → **2 本とも走らせる**（片方だけでは漏れる）:
+
+  ```sh
+  python3 ~/projects/claude-forge-dashboard/ops/roster_check.py   # 名鑑 ↔ ~/.claude の在庫
+  python3 ~/projects/claude-forge-dashboard/ops/flows_check.py    # 名鑑 ↔ /flows のパネル
+  ```
+
+**扱い**（ここは正解が一意なので**自走してよい**。§3.6 のような判断の分岐は無い）:
+
+- **どちらかが非ゼロ終了** → 未反映。`company.ts`（社員 1 人分）と `flows.ts`（`no` を揃えた運行図パネル 1 枚）を書き足し、**両方 OK になるまで**再実行してから push する。直した分は §3.5 の `git reset --soft HEAD~1` 手順で commit をやり直す（`--amend` は使わない）。
+- **反映先の枠**: グローバルな skill / agent は `DEPARTMENTS`。プロジェクト repo の `.claude/skills` に置く project skill は `RESIDENT`（客先常駐）枠で、**`kind:` キーを持たせない**（`roster_check.py` は `~/.claude` 配下しか照合しないので、DEPARTMENTS に入れると drift 判定で deploy が止まる）。
+- **dashboard を別セッションが編集中のことがある**。checks が落ちた原因が自分の差分でないなら、勝手に直さず §6 報告に回す。
+
+> **`roster_check.py` だけでは足りない。** 2026-07-18 に weekly-plan を追加した際、`company.ts` は更新したが `flows.ts` のパネルが漏れた。roster_check は `flows.ts` を見ないので通ってしまい、片方だけでは気づけない。過去には banso が名鑑から数週間欠落した実例もある。
 
 ## 3.7 leak-auditor ゲート (漏洩リスクのある diff だけ・区切りで 1 回)
 

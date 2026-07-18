@@ -8,6 +8,7 @@
     { "query": "https://github.com/acme/app/issues/42 の実装計画を立てて Issue にコメントして", "expect": "plan-issue" },
     { "query": "この PR のレビュー指摘に対応して直して: https://github.com/acme/app/pull/7", "expect": "fix-pr" },
     { "query": "いま話した内容をタスクの Issue にまとめて作って", "expect": "create-issue" },
+    { "query": "今週の計画立てて。今週やる issue を選んで Todo に入れて", "expect": "weekly-plan" },
     { "query": "この repo にも claude-forge の PR 自動レビュー workflow を入れて", "expect": "NONE" },
     { "query": "この変更を ship して", "expect": "ship" },
     { "query": "リアルタイム通知の実装、WebSocket と SSE どっちを採用すべきか実現可能性を調べて GO/NO-GO の判断材料を出して", "expect": "spike" },
@@ -71,6 +72,9 @@
     { "query": "https://github.com/acme/app/issues/44 の内容を要約して教えて", "expect": "NONE" },
     { "query": "S3 に署名付き URL でアップロードするコードを書いて", "expect": "NONE" },
     { "query": "Aurora 採用の判断はもう済んでる。移行の実装計画を立てて Issue にコメントして: https://github.com/acme/app/issues/61", "expect": "plan-issue" },
-    { "query": "この実装差分、複数観点でレビューして修正まで回して", "expect": "NONE" }
+    { "query": "この実装差分、複数観点でレビューして修正まで回して", "expect": "NONE" },
+    { "query": "週初めのトリアージして。Todo が空だから今週の分を積んで", "expect": "weekly-plan" },
+    { "query": "Backlog にある issue、今週やる分だけ選んで board の Todo に上げて", "expect": "weekly-plan" },
+    { "query": "https://github.com/acme/app/issues/42 を今週やりたいので着手して", "expect": "implement-issue" }
   ]
 }
