@@ -1,7 +1,7 @@
 ---
 name: implement-issue
 argument-hint: "[issue-url | doc-path]"
-allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(git:*), Bash(gh issue view:*), Bash(gh issue edit:*), Bash(gh issue comment:*), Bash(gh issue list:*), Bash(gh label list:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(ls:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Skill, Agent, Bash(git:*), Bash(gh issue view:*), Bash(gh issue edit:*), Bash(gh issue comment:*), Bash(gh issue list:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(gh search code:*), Bash(ls:*)
 description: "GitHub IssueのURLまたはドキュメントパスを受け取り、要件分析→コードベース調査→実装→レビューサイクル→PR作成までを自動で行うスキル。issue の作業開始（着手）の既定の入口。「このissueに着手して」「issueやって」のように issue を渡して作業を始めるよう指示されたらこれを使う（実装計画とテストケース一覧を先に提示してから実装に入るので、割り込みで方針を正せる）。以下の場合に使用: (1) GitHub Issue URLを渡されて「実装して」「これやって」「着手して」「取り掛かって」「やり始めて」「対応して」と依頼された場合 (2) ドキュメントパスを渡されて「実装して」と依頼された場合 (3) 「/implement-issue」と呼び出された場合 (4) Issue URLやドキュメントを渡されて実装からPR作成までを一気通貫で依頼された場合。明示的に「計画だけ」「設計だけ」「調査だけ」を求められた場合は実装に入らず [[plan-issue]] / [[spike]] を使う。「伴走して」「一緒に進めて」「要所で相談して」と自分を巻き込みながらの進行を求められたら、止まらず完走するこの skill ではなく [[banso]] を使う — Issue URL 付きで「着手して」と併記されていても、相談・伴走の語があれば banso が優先で、この skill は発動しない。"
 ---
 
@@ -271,7 +271,7 @@ Agent tool:
 2. FAIL → 指摘を修正して再レビュー（前回指摘を次の prompt に渡す）。**4 回目以降の FAIL は個別指摘の修正より先に根本設計を疑う**。**前回と同じ指摘が同じ箇所に返ってきたら、ラウンドが残っていても打ち切る**（修正が効いていないのに回数だけ使う空回りを止める。打ち切りは 5回FAIL と同じ扱いで下のサイクル 5 の手順に進む）
 3. PASS → Phase 8へ（ユーザに確認せず自動で進む）
 4. 最大5回で打ち切り（WARN や 5回FAIL でもそのまま Phase 8 に進む。レビュー状況は PR 本文には書かず、完了報告でユーザに伝える）
-5. **5回FAILのまま打ち切った場合は、Phase 8 で PR を作った直後に `do-not-merge` ラベルを付け、未解消指摘を PR にコメントする**（レビュー不合格のまま出す成果物を合格品と同じ扱いにしない）。手順は Phase 8 の「レビュー未解消のまま出す場合」を参照。WARN 止まりや PASS では何もしない
+5. **5回FAILのまま打ち切った場合は、Phase 8 の `create-pr` 呼び出しに `レビュー未解消:` の行を渡す**（レビュー不合格のまま出す成果物を合格品と同じ扱いにしない）。ラベル付与とコメントは create-pr が `gh pr create` の直後・CI ループに入る前に行う（create-pr Step 5-6）。**この skill から後付けしない** — create-pr の CI ループ（最大 3 サイクル）の完了を待つと、その待機中に CI が緑になった時点で allowlist repo では常設ループが先に merge しうる。WARN 止まりや PASS では渡さない
 
    > **draft PR にはしない**（2026-07-19 変更）。draft は CI 側のレビュー（`claude-review` 等は `draft == false` を条件にしていることが多い）を素通りさせるので、**一番怪しい PR が無検査のまま人手に渡る**。ready で出してレビューは受けさせ、merge だけをラベルで止める。
 
@@ -296,33 +296,12 @@ Skill tool:
       - Deviations（計画から外れた判断とその理由）があれば Notes 見出しに含める（_shared/pr-conventions.md §1。無ければ見出しごと出さない）
       - Closes #<Issue番号>（Issue 入力で、この PR が Issue を完了させる場合。merge 時の自動 close に必須。**Issue が実装先と別 repo のときは `Closes <owner>/<repo>#<番号>` の完全修飾で書く** — `#<番号>` だけだと実装先 repo の同番号 Issue を指す）
       - Related: <Issue URL or ドキュメントパス>（ドキュメント入力、または Issue の部分対応で完了させない場合）
+    レビュー未解消: <Phase 7 が 5回FAIL のときだけ。未解消指摘の要点を 1-2 行。PASS / WARN 打ち切りではこの行ごと省略する>
 ```
 
 `create-pr` 側でブランチ作成・コミット・push・PR作成を一括実施するため、本スキルから個別に `gh pr create` 等を叩かないこと。
 
-### レビュー未解消のまま出す場合（Phase 7 が 5回FAIL のときだけ）
-
-PR 作成後に、merge を止める signal を 2 つ残す。**PASS / WARN 打ち切りでは何もしない。**
-
-```bash
-# 1. ラベル（常設ループの自動 merge を止める）
-gh label list --limit 100 --repo <owner/repo> | grep -q '^do-not-merge' \
-  && gh pr edit <PR URL> --add-label do-not-merge
-
-# 2. 何が未解消かを人間が読める形で
-gh pr comment <PR URL> --body "$(cat <<'EOF'
-⚠️ ローカルレビュー（doc-impl-reviewer）5回FAILのまま PR 作成（implement-issue）。
-
-### 未解消の指摘
-- <要点1>
-- <要点2>
-
-内容を確認し、解消できたら `do-not-merge` ラベルを外してください。
-EOF
-)"
-```
-
-**repo に `do-not-merge` ラベルが無ければラベル付与は skip し、コメントだけ残す**（存在しないラベルを `--add-label` に渡すと `gh` が失敗するため。ラベルの新規作成もしない — 常設ループを運用していない repo では意味を持たない）。
+> **レビュー未解消（Phase 7 が 5回FAIL）のときも、上の args に `レビュー未解消:` を含めるだけでよい。** `do-not-merge` ラベルと警告コメントは create-pr が `gh pr create` の直後（CI ループの前）に付ける（create-pr Step 5-6）。**この skill から `gh pr edit` / `gh pr comment` を叩かない** — 後付けにすると CI ループの待機中に自動 merge される窓が開く。
 
 ### IssueへのPRコメント投稿
 
@@ -427,5 +406,5 @@ cd <元のリポジトリパス>
 5. **Issueリポジトリ≠実装先リポジトリ** - 必ずPhase 2で対象リポジトリを特定する
 6. **worktreeで作業** - 元のリポジトリを汚さず、isolatedな環境で実装する
 7. **PR作成後にIssueコメント** - Issue URL入力時は必ずIssueにPR URLをコメントする
-8. **本スキルは PR 作成まで** - `gh pr merge` しない。merge は人間か、常設ループの安全ガード（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0）が判断する
+8. **本スキルは PR 作成まで** - `gh pr merge` しない。merge は人間か、**allowlist repo では**常設ループの安全ガード（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0）が判断する
 9. **テストを先に落とす** - Phase 6 は red→green の順。スキップできるのはテストで検証できない変更のみ（完了報告に理由を明記）
