@@ -51,7 +51,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 |---|---|---|
 | PR 作成 | Claude Code / Codex どちらでも | Claude は `ship` / `create-pr` skill。Codex も同じ規約（feature branch・日本語コミット・main 直 push 禁止）で可（2026-07-11 に review-only を撤回） |
 | PR レビュー | Codex（openai codex プラグイン） | `ship` の push 前確認（§3.8）→ ユーザーが `/codex:review` を実行（ユーザー起動専用・Claude は案内のみ）。GitHub 側 automatic review は既定オフ |
-| merge 判断 | 人間 | GitHub UI で内容を見て手動 merge |
+| merge 判断 | 人間 + 常設ループ | 原則は人間が GitHub UI で内容を見て手動 merge。**allowlist に登録した repo だけ** claude-forge-personal の `tools/loops/pr_watch.py` が安全ガード（repo allowlist・ラベル・パス・CI 緑）を通った PR を自動 merge する（`_shared/pr-conventions.md` §0）。skill 側からは状況を問わず merge しない |
 
 PR を作る/直す skill は 3 つ。**「新規 / 既存」×「対話 / 自動」の 2 軸**で使い分ける（重複ではなく別セル）:
 
