@@ -205,19 +205,33 @@ def agent_refs_in_skills() -> dict[str, list[str]]:
     return refs
 
 
-def find_orphan_dirs() -> list[str]:
-    """Skill dirs that exist but contain no SKILL.md (and aren't intentionally ignored).
+def find_orphan_dirs(skills_dir=SKILLS_DIR) -> list[str]:
+    """Skill dirs that hold contents but no SKILL.md (and aren't intentionally ignored).
 
     Catches the "made a dir + scripts but forgot SKILL.md" mistake, which
     ``glob('*/SKILL.md')`` would otherwise skip in silence. Ignored dirs
     (scaffolds, retired cron dirs) are excluded via is_ignored_dir.
+
+    *Empty* dirs are skipped: that is exactly how an uninitialized git submodule
+    presents itself (for a submodule mounted under skills/, ``git worktree add``
+    and a clone without ``--recurse-submodules`` both leave the mount point as a
+    bare empty dir), and flagging it made E6 block the Stop hook on every
+    worktree that touched a skill. Detection power is unaffected: git does not track empty
+    dirs, so a half-built skill that can actually reach a commit always has
+    contents.
+
+    ``skills_dir`` is injectable so the check is unit testable against a
+    synthetic tree (same convention as plugin_symlink_drift).
     """
-    if not SKILLS_DIR.exists():
+    skills_dir = Path(skills_dir)
+    if not skills_dir.exists():
         return []
     orphans = []
-    for d in sorted(SKILLS_DIR.iterdir()):
+    for d in sorted(skills_dir.iterdir()):
         if not d.is_dir() or is_ignored_dir(d.name):
             continue
+        if not any(d.iterdir()):
+            continue  # empty => uninitialized submodule / stray mkdir, never a committed skill
         if not (d / "SKILL.md").exists():
             orphans.append(d.name)
     return orphans

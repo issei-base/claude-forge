@@ -26,6 +26,7 @@ from _skills import (  # noqa: E402
     _PROSE_AGENT_RE,
     _SUBAGENT_RE,
     agent_refs_in_skills,
+    find_orphan_dirs,
     is_ignored_dir,
     load_agents,
     load_marketplace,
@@ -85,6 +86,54 @@ class TestIgnoredDirs(unittest.TestCase):
         # ohayou は skills/ の外 (tools/ohayou/) へ移設済みなので、skills/ 配下の
         # 名前としては例外扱いしない (誤って同名 skill を作ったら lint で気づける)。
         self.assertFalse(is_ignored_dir("ohayou"))
+
+
+class TestOrphanDirs(unittest.TestCase):
+    """E6 (SKILL.md を持たない skill dir の検出)。空 dir を除外しても、本来の検出
+    対象 (中身はあるが SKILL.md が無い) は落ちないことを両方向で固定する。"""
+
+    def _skills_dir(self, base):
+        d = os.path.join(base, ".claude", "skills")
+        os.makedirs(d)
+        return d
+
+    def test_empty_dir_is_not_orphan(self):
+        # skills/ 配下に git submodule を置くと、git worktree add (や
+        # --recurse-submodules 無しの clone) では中身が来ず空 dir になる。E6 に数えると
+        # skill を触るたび Stop hook が無関係な理由でターン終了を塞ぐ。git は空 dir を
+        # 追跡しないので、除外しても「コミットされる半端な skill」の見逃しは無い。
+        with tempfile.TemporaryDirectory() as base:
+            skills = self._skills_dir(base)
+            os.makedirs(os.path.join(skills, "vendored"))  # 未初期化 submodule = 空
+            self.assertEqual(find_orphan_dirs(skills), [])
+
+    def test_dir_with_contents_but_no_skill_md_is_orphan(self):
+        # 本来の E6 対象 (dir + scripts を作って SKILL.md を忘れた) は落とさない。
+        with tempfile.TemporaryDirectory() as base:
+            skills = self._skills_dir(base)
+            os.makedirs(os.path.join(skills, "halfbuilt", "scripts"))
+            Path(skills, "halfbuilt", "scripts", "run.py").write_text("x")
+            self.assertEqual(find_orphan_dirs(skills), ["halfbuilt"])
+
+    def test_initialized_submodule_with_skill_md_is_not_orphan(self):
+        # 初期化済み (中身が入った) submodule は SKILL.md を持つので orphan でない。
+        with tempfile.TemporaryDirectory() as base:
+            skills = self._skills_dir(base)
+            os.makedirs(os.path.join(skills, "vendored"))
+            Path(skills, "vendored", "SKILL.md").write_text("---\nname: vendored\n---\n")
+            self.assertEqual(find_orphan_dirs(skills), [])
+
+    def test_scaffold_dir_still_exempt(self):
+        # 中身があっても _template 等は従来どおり除外 (is_ignored_dir)。
+        with tempfile.TemporaryDirectory() as base:
+            skills = self._skills_dir(base)
+            os.makedirs(os.path.join(skills, "_template"))
+            Path(skills, "_template", "SKILL.md.tmpl").write_text("x")
+            self.assertEqual(find_orphan_dirs(skills), [])
+
+    def test_missing_skills_dir(self):
+        with tempfile.TemporaryDirectory() as base:
+            self.assertEqual(find_orphan_dirs(os.path.join(base, "nope")), [])
 
 
 class TestAgentLint(unittest.TestCase):

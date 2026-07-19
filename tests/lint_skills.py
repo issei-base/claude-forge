@@ -15,8 +15,9 @@ Checks (ERROR = non-zero exit; WARN = printed, still exits 0 if no errors):
   E4  `description` is present and >= MIN_DESC_LEN chars
   E5  no two skills share a `name`
   E6  no skill dir is missing its SKILL.md (a dir + scripts but no SKILL.md is a
-      half-built skill; ignored scaffolds like `_template` and local-only dirs
-      are exempt — see _skills.is_ignored_dir)
+      half-built skill; ignored scaffolds like `_template`, local-only dirs and
+      *empty* dirs — how an uninitialized submodule looks in a worktree — are
+      exempt, see _skills.find_orphan_dirs / is_ignored_dir)
   W1  description carries explicit trigger guidance (example phrases / when-to-use)
   W2  every skill has at least one fixture in triggers.json (so a new skill can't
       land without a firing test; --strict turns this into an error in CI)
