@@ -22,7 +22,7 @@ claude-forge は Claude Code のカスタム skill 集であり、**それ自体
 | `.claude/agents/<name>.md` | `plugins/<plugin>/agents/<name>.md` への**相対 symlink**（6 agent: doc-reviewer / doc-impl-reviewer / skill-reviewer / leak-auditor / fact-checker / skill-empirical-tester） |
 | `.claude/hooks/skill-lint.py` | Stop hook（**実体**・repo 開発専用で配布しない）。SKILL.md を編集したターン終了時に `tests/lint_skills.py` を走らせ、壊れてたら `exit 2` で停止をブロック |
 | `.claude/hooks/git-push-guard.py` | `plugins/forge-github-flow/hooks/git-push-guard.py` への **symlink**。PreToolUse hook (Bash) で宛先が `main`/`master` の `git push` を harness 層で deny。`rm -rf`/`sudo` 等は settings の permissions.deny 済みなので扱わない |
-| `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・E1–E8/W1–W3・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
+| `tests/` | skill の検証ハーネス。`lint_skills.py` (決定的 lint・E1–E8/W1–W5・Stop hook が使用) + `eval_triggers.py` (発火 eval) + `triggers.json` (発火 fixture) + `test_scripts.py` (スクリプトの unittest) |
 | `install.sh` | 全 skill + agent を `~/.claude/` に symlink (global 運用)。`_`/SKILL.md 無しの dir はスキップ。`--dry-run` 可 |
 | `.claude/settings.json` | project スコープ設定（skill 共通の権限 + `aws` MCP・サニタイズ済み）。**このタスクでは変更しない**（hook パスは symlink 経由で生きる）。個人用上書きは `.claude/settings.local.json`（gitignore） |
 | `.github/workflows/` | `skill-lint.yml` (CI lint・label gate なし) のみ。PR レビューは Codex GitHub code review に一本化（review 用 workflow は持たない） |

@@ -9,6 +9,8 @@ allowed-tools: Read, Glob, Grep, Bash(gh issue create:*), Bash(gh issue edit:*),
 
 GitHub の Issue を作成・リライトする。**第三者が読んで着手できる「概要」**を作るのが目的で、実装手順や計画は含めない（それは plan-issue の役割）。
 
+> **`_shared/` の読み方:** `_shared/pr-conventions.md` は**この SKILL.md と同階層**の `_shared/` にある。パスを字句的に畳まず `<この SKILL.md のディレクトリ>/../_shared/pr-conventions.md` の形のまま Read する（symlink 経由で届いていても `..` は実体側に解決される）。畳んだパスを組み立て直して Read しない。
+
 ## 対象リポジトリの決定
 
 1. ユーザが `owner/repo` または Issue URL を明示した → それを対象にする
