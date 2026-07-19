@@ -10,6 +10,8 @@ description: "GitHub IssueのURLまたはドキュメントパスを受け取り
 GitHub IssueのURLまたはドキュメントパスを入力として、要件理解→実装→レビュー→PR作成までを自動で遂行する。
 **実装計画のユーザ確認以外は、全フェーズを自動で完了させる。途中で止まらない。**
 
+> **`_shared/` の読み方:** `_shared/pr-conventions.md` は**この SKILL.md と同階層**の `_shared/` にある。パスを字句的に畳まず `<この SKILL.md のディレクトリ>/../_shared/pr-conventions.md` の形のまま Read する（symlink 経由で届いていても `..` は実体側に解決される）。畳んだパスを組み立て直して Read しない。
+
 ## Usage
 
 ```

@@ -18,6 +18,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lint_skills  # noqa: E402
 from _skills import (  # noqa: E402
     AGENTS_DIR,
     BUILTIN_AGENTS,
@@ -30,6 +31,7 @@ from _skills import (  # noqa: E402
     load_agents,
     load_marketplace,
     load_plugins,
+    load_skills,
     parse_frontmatter,
     plugin_agents,
     plugin_skills,
@@ -279,6 +281,101 @@ class TestPluginManifests(unittest.TestCase):
             self.assertTrue(p["has_manifest"], f"plugins/{p['dir']} lacks a valid plugin.json")
             self.assertEqual(p["name"], p["dir"], f"plugins/{p['dir']} name mismatch")
             self.assertTrue(p["version"], f"plugins/{p['dir']} plugin.json missing version")
+
+
+class TestSharedRefResolution(unittest.TestCase):
+    """W4/W5: `_shared/<file>.md` 参照が読み手側で解決できる形になっているか。
+
+    `../_shared/x.md` というリテラルは symlink 経由でも実体側に着地する (カーネルが
+    `..` より先に symlink を解決するため)。壊れるのは読み手が `<skill>/..` を字句的に
+    畳んでから Read したときで、畳んだ先の `~/.claude/skills/_shared/` は存在しない。
+    W4 はそれを防ぐ注記を要求し、W5 は「注記の代わりにマシン固有の絶対パスを書く」
+    という誤った解 (plugin install 先には無いパス) を弾く。
+    """
+
+    NOTE = ("パスを字句的に畳まず `<この SKILL.md のディレクトリ>/../_shared/"
+            "pr-conventions.md` の形のまま Read する")
+    REF = "[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) **§0 が唯一の定義**"
+
+    def _skill(self, base, name, body):
+        d = Path(base, name)
+        d.mkdir(parents=True)
+        (d / "SKILL.md").write_text(body, encoding="utf-8")
+        return {"dir": name, "path": d / "SKILL.md"}
+
+    def _warns(self, body, distributed=True):
+        with tempfile.TemporaryDirectory() as base:
+            s = self._skill(base, "ship", body)
+            return lint_skills._shared_ref_warns([s], distributed)
+
+    def test_ref_without_note_is_flagged(self):
+        # これが直した本体のバグ: 参照はあるが畳むなという指示が無い。
+        warns = self._warns(self.REF)
+        self.assertEqual(len(warns), 1, warns)
+        self.assertIn("W4", warns[0])
+
+    def test_ref_with_note_is_clean(self):
+        self.assertEqual(self._warns(f"{self.NOTE}\n\n{self.REF}"), [])
+
+    def test_note_after_first_reference_is_flagged(self):
+        # 存在するだけでは足りない: 参照を見た時点で動く読み手は、後ろにある注記に
+        # 到達しない。weekly-plan で実際に踏んだ配置ミス (skill-reviewer が検出)。
+        warns = self._warns(f"{self.REF}\n\n{self.NOTE}")
+        self.assertEqual(len(warns), 1, warns)
+        self.assertIn("W4", warns[0])
+        self.assertIn("after", warns[0])
+
+    def test_note_before_reference_is_clean(self):
+        # 注記自身も `_shared/...md` を含むが、それを「最初の参照」と誤認しない。
+        self.assertEqual(self._warns(f"{self.NOTE}\n\n{self.REF}"), [])
+
+    def test_no_shared_ref_no_warn(self):
+        # _shared を参照しない skill には何も要求しない。
+        self.assertEqual(self._warns("ただの skill 本文。`~/projects/x` に触れる。"), [])
+
+    def test_machine_local_path_to_shared_flagged_when_distributed(self):
+        # create-pr にあった実際の leak。plugin install したユーザに
+        # ~/projects/claude-forge/ は存在しない。
+        body = (f"{self.NOTE}\n\n{self.REF}（原本: `~/projects/claude-forge/"
+                f".claude/skills/_shared/pr-conventions.md`）")
+        warns = self._warns(body)
+        self.assertEqual(len(warns), 1, warns)
+        self.assertIn("W5", warns[0])
+
+    def test_machine_local_path_allowed_when_not_distributed(self):
+        # plugins/ を持たない repo (claude-forge-personal) では絶対パス併記が正解なので
+        # W5 は no-op。E7-E8 が PLUGINS_DIR で gate されているのと同じ repo 形状判定。
+        body = (f"{self.NOTE}\n\n{self.REF}（原本: `~/projects/claude-forge-personal/"
+                f".claude/skills/_shared/pr-conventions.md`）")
+        self.assertEqual(self._warns(body, distributed=False), [])
+
+    def test_clone_target_path_not_flagged(self):
+        # pr-conventions §6 の「`~/projects/<リポジトリ名>` を探索」は clone 先の話で
+        # _shared の解決とは無関係。bare な ~/projects/ で誤爆させない (実測した誤検知)。
+        body = (f"{self.NOTE}\n\n{self.REF} §6（カレント確認 → `~/projects/<リポジトリ名>`"
+                f" 探索 → 無ければ `gh repo clone`）")
+        self.assertEqual(self._warns(body), [])
+
+    def test_shared_body_itself_scanned_for_local_paths(self):
+        # _shared/*.md 自身も W5 の対象。load_skills() は `_` 始まりを飛ばすので、
+        # ここを見ないと pr-conventions.md 内の絶対パスが素通りする (実際にしていた)。
+        warns = lint_skills._shared_ref_warns([], distributed=True)
+        self.assertEqual(warns, [], "\n".join(warns))
+
+    def test_real_skills_all_resolve(self):
+        # 実 repo の全 skill が W4/W5 を満たす (8 本の _shared 参照 skill を含む)。
+        warns = lint_skills._shared_ref_warns(load_skills(), lint_skills.PLUGINS_DIR.exists())
+        self.assertEqual(warns, [], "\n".join(warns))
+
+    def test_every_shared_referencing_skill_carries_the_note(self):
+        # 参照サイトが実際に 8 skill あることを固定する。参照を増やした skill が
+        # 注記なしで入ってきたら test_real_skills_all_resolve が落ちる。
+        refs = [s["dir"] for s in load_skills()
+                if lint_skills.SHARED_REF_RE.search(s["path"].read_text(encoding="utf-8"))]
+        self.assertEqual(sorted(refs), [
+            "create-issue", "create-pr", "fix-pr", "implement-issue",
+            "orchestrate", "plan-issue", "ship", "weekly-plan",
+        ])
 
 
 class TestGitPushGuard(unittest.TestCase):

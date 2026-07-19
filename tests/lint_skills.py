@@ -24,6 +24,19 @@ Checks (ERROR = non-zero exit; WARN = printed, still exits 0 if no errors):
       the combined text at DESC_LISTING_CAP chars in the listing the router sees
       (docs.claude.com/.../skills); past it, trailing trigger phrases are dropped
       and auto-firing silently degrades. Warns approaching the cap, before it bites.
+  W4  a SKILL.md that cross-references `_shared/<file>.md` also carries the
+      path-resolution note. The reference is written `../_shared/...` relative to
+      the SKILL.md's own directory; the kernel resolves the symlink before `..`,
+      so the literal path lands on the real body even when the skill is reached
+      through `~/.claude/skills/<name>`. A reader that folds `<name>/..`
+      *lexically* first lands on `~/.claude/skills/_shared/`, which does not
+      exist — so the note ("don't fold the path") is what keeps the reference
+      readable in the deployments this repo actually ships to.
+  W5  that note is not a machine-local absolute path (`~/projects/<repo>/...`),
+      in a repo that ships as a plugin. Only applies when plugins/ exists: a
+      `claude plugin install` user has no such directory, so a local path is a
+      dead end for them. A plugins-less repo may legitimately use one (see the
+      PLUGINS_DIR gate on E7–E8 for the same repo-shape reasoning).
 
 Agent layer (only when a .claude/agents/ dir exists — no-op in skills-only repos):
   A1  each agents/*.md has a `name` in frontmatter
@@ -53,6 +66,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -83,6 +97,18 @@ FIXTURES = Path(__file__).resolve().parent / "triggers.json"
 # silences W1. Kept broad on purpose — this is a nudge, not a gate.
 TRIGGER_MARKERS = ("「", "発動", "使用", "トリガ", "use ", "when ", "trigger", "/", "など")
 
+# A cross-reference into the shared-rules dir (see W4 in the module docstring).
+SHARED_REF_RE = re.compile(r"_shared/[A-Za-z0-9._-]+\.md")
+# Soft signal that the path-resolution note is present. Broad on purpose, same
+# spirit as TRIGGER_MARKERS — keyed on the operative instruction ("don't fold the
+# path"), so a reword that drops the instruction also drops the marker.
+PATH_NOTE_MARKERS = ("字句的に畳", "lexically fold")
+# A machine-local path pointing *at a _shared file* (`~/projects/<repo>/…/_shared/x.md`).
+# Deliberately not a bare `~/projects/` match: several skills legitimately name
+# `~/projects/<リポジトリ名>` as the place to look for the *target* repo to clone
+# (pr-conventions §6), which has nothing to do with resolving `_shared`.
+LOCAL_SHARED_ABS_RE = re.compile(r"~/projects/\S*_shared/[A-Za-z0-9._-]+\.md")
+
 
 def _fixture_expectations() -> set | None:
     """Set of skill names that triggers.json expects to fire, or None if unreadable.
@@ -95,6 +121,70 @@ def _fixture_expectations() -> set | None:
     except (OSError, ValueError, KeyError):
         return None
     return {c.get("expect") for c in cases if isinstance(c, dict)}
+
+
+def _shared_ref_warns(skills: list[dict], distributed: bool) -> list[str]:
+    """W4/W5: `_shared/<file>.md` cross-references stay resolvable for the reader.
+
+    The reference is relative to the SKILL.md's own directory (`../_shared/...`),
+    which is correct in every layout this repo ships: project scope, the
+    ``~/.claude/skills/<name>`` symlink, and a ``claude plugin install`` copy.
+    The kernel resolves the symlink before ``..``, so the literal path always
+    lands on the real body. What breaks is a reader that folds ``<name>/..``
+    lexically *before* reading: that yields ``~/.claude/skills/_shared/``, which
+    does not exist. W4 requires the note that tells the reader not to fold.
+
+    W5 additionally rejects a machine-local ``~/projects/<repo>/...`` path as the
+    remedy, but only when this repo ships as a plugin (``distributed``) — a
+    plugin user has no such directory. A plugins-less repo may use one, so the
+    check no-ops there for the same reason E7–E8 do.
+    """
+    def _w5(label: str, text: str) -> list[str]:
+        return [
+            f"[{label}:{n}] W5 points at _shared/ via a machine-local `~/projects/...` "
+            "path — absent in a `claude plugin install` checkout"
+            for n, line in enumerate(text.splitlines(), 1)
+            if LOCAL_SHARED_ABS_RE.search(line)
+        ]
+
+    warns: list[str] = []
+    for s in skills:
+        try:
+            text = s["path"].read_text(encoding="utf-8")
+        except OSError:
+            continue  # unreadable body is E1's problem, not this check's
+        if not SHARED_REF_RE.search(text):
+            continue
+        lines = text.splitlines()
+        note_at = next((i for i, ln in enumerate(lines)
+                        if any(m in ln for m in PATH_NOTE_MARKERS)), None)
+        # The note names `_shared/…md` itself, so skip its own line when locating
+        # the first *real* reference — otherwise every file looks mis-ordered.
+        ref_at = next((i for i, ln in enumerate(lines)
+                       if SHARED_REF_RE.search(ln) and i != note_at), None)
+        if note_at is None:
+            warns.append(
+                f"[{s['dir']}] W4 references _shared/ without a path-resolution note "
+                "— a reader that folds `<skill>/..` lexically lands on a dir that "
+                "doesn't exist (add the `_shared/` の読み方 note near the top)"
+            )
+        elif ref_at is not None and note_at > ref_at:
+            # Presence alone is not enough: a reader that acts on the reference
+            # the moment it reads it never reaches a note placed further down.
+            warns.append(
+                f"[{s['dir']}:{note_at + 1}] W4 path-resolution note sits *after* the "
+                f"first _shared/ reference (line {ref_at + 1}) — move it above"
+            )
+        if distributed:
+            warns.extend(_w5(s["dir"], text))
+
+    # W5 covers the _shared bodies themselves too: they carry their own "how to
+    # read me" prose, and load_skills() skips `_` dirs — which is exactly how the
+    # machine-local path inside pr-conventions.md stayed invisible.
+    if distributed:
+        for md in sorted((SKILLS_DIR / "_shared").glob("*.md")):
+            warns.extend(_w5(f"_shared/{md.name}", md.read_text(encoding="utf-8")))
+    return warns
 
 
 def lint() -> int:
@@ -155,6 +245,9 @@ def lint() -> int:
         for s in skills:
             if s["name"] and s["name"] not in covered:
                 warns.append(f"[{s['dir']}] W2 no fixture in triggers.json (add a firing test)")
+
+    # W4/W5: `_shared/` cross-references stay resolvable (see the helper's docstring).
+    warns.extend(_shared_ref_warns(skills, PLUGINS_DIR.exists()))
 
     # Agent layer (A1–A4). load_agents() is empty in a skills-only repo, so the
     # whole block is a no-op there — skills stay the only concern.

@@ -12,6 +12,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(grep:*), Bash(git stat
 
 > **PR 系 skill の使い分け:** 本スキルは「止まらずに新規 PR まで作る + CI 失敗を自動修正する」**自動エンジン**で、主に implement-issue / fix-pr から委譲される。対話的に (コミットメッセージを見せて承認してもらいながら) 新規 PR を出すなら [`ship`](../ship/SKILL.md)、**既存 PR**（PR URL）を直すなら [`fix-pr`](../fix-pr/SKILL.md)。
 
+> **`_shared/` の読み方:** `_shared/pr-conventions.md` は**この SKILL.md と同階層**の `_shared/` にある。パスを字句的に畳まず `<この SKILL.md のディレクトリ>/../_shared/pr-conventions.md` の形のまま Read する（symlink 経由で届いていても `..` は実体側に解決される）。畳んだパスを組み立て直して Read しない。
+
 ## Usage
 
 ```
@@ -153,7 +155,7 @@ non-fast-forward で reject された場合は **STOP**。`--force` / `--force-w
 
 ### 5-3: 簡潔さの方針（テンプレート有無を問わず適用）
 
-**本文の簡潔さは [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §1 に従う**（原本: `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`）。要点（fallback）:
+**本文の簡潔さは [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §1 に従う**。要点（fallback）:
 - **含める**: 意図（なぜ）1-3 行の Summary / 何が変わったかの簡潔な要約（diff で読める詳細は書かない）/ 関連 Issue・ドキュメントへのリンク
 - **含めない**: ロールバック手順・検証/進捗チェックリスト・リスク表・レビュー履歴・運用詳細・自明な diff の逐一解説
 - **例外**: diff だけでは気付けない非自明な前提だけ `Notes` に要点を。無ければ見出しごと出さない

@@ -9,6 +9,8 @@ allowed-tools: Read, Write, Glob, Grep, Skill, Agent, AskUserQuestion, Bash(git:
 
 複数 issue を「計画 → テストレビュー → 並列実装 → CI 収束」まで一括で運行する。人間のゲートは **テストレビュー（Phase 3・このスキル唯一の停止点）** と **merge（GitHub 上・このスキルの外）** の 2 つだけ。
 
+> **`_shared/` の読み方:** `_shared/pr-conventions.md` は**この SKILL.md と同階層**の `_shared/` にある。パスを字句的に畳まず `<この SKILL.md のディレクトリ>/../_shared/pr-conventions.md` の形のまま Read する（symlink 経由で届いていても `..` は実体側に解決される）。畳んだパスを組み立て直して Read しない。
+
 ## Usage
 
 ```

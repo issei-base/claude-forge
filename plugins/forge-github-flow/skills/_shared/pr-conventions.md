@@ -1,14 +1,17 @@
 # PR / Issue 共通コンベンション (claude-forge)
 
-`ship` / `create-pr` / `fix-pr` / `create-issue` / `plan-issue` / `implement-issue` が
-共有する方針。**方針変更はこの 1 ファイルで行い**、各 SKILL.md はここを参照する
-（同じ内容を 6 つの SKILL.md にコピペしてドリフトさせない、が狙い）。`_` 始まりなので
-lint / install / 発火の対象外。
+`ship` / `create-pr` / `fix-pr` / `create-issue` / `plan-issue` / `implement-issue` /
+`orchestrate` / `weekly-plan` が共有する方針。**方針変更はこの 1 ファイルで行い**、
+各 SKILL.md はここを参照する（同じ内容を 8 つの SKILL.md にコピペしてドリフト
+させない、が狙い）。`_` 始まりなので lint / install / 発火の対象外。
 
-> **読み方**: 各 skill はこのファイルを `Read` で開いて従う。原本の絶対パスは
-> `~/projects/claude-forge/.claude/skills/_shared/pr-conventions.md`
-> （global symlink 運用でも cwd 非依存で読める）。別マシン等でこのファイルが
-> 無いときは、各 SKILL.md 内に残した「fallback 要点」に従う。
+> **読み方**: 各 skill は参照元 SKILL.md からの相対パス
+> `<その SKILL.md のディレクトリ>/../_shared/pr-conventions.md` を**字句的に畳まず
+> そのまま** `Read` で開いて従う（`~/.claude/skills/<name>` の symlink 経由で届いて
+> いても、`..` は symlink 解決後の実体側に効くのでこの形で必ず着地する。畳んだ
+> `~/.claude/skills/_shared/` は存在しない）。マシン固有の絶対パスは書かない —
+> `claude plugin install` で入れたユーザの環境には該当ディレクトリが無い。
+> このファイルが読めないときは、各 SKILL.md 内に残した「fallback 要点」に従う。
 
 ## 0. 共通安全ルール（ship / create-pr / fix-pr 共通の hard guard）
 
