@@ -271,7 +271,9 @@ Agent tool:
 2. FAIL → 指摘を修正して再レビュー（前回指摘を次の prompt に渡す）。**4 回目以降の FAIL は個別指摘の修正より先に根本設計を疑う**
 3. PASS → Phase 8へ（ユーザに確認せず自動で進む）
 4. 最大5回で打ち切り（WARN や 5回FAIL でもそのまま Phase 8 に進む。レビュー状況は PR 本文には書かず、完了報告でユーザに伝える）
-5. **5回FAILのまま打ち切った場合は、Phase 8 の create-pr 呼び出しの args に `draft: true（レビュー予算切れFAIL: <未解消指摘の要点1行>）` の行を渡して draft PR として作成する**（レビュー不合格のまま出す成果物を合格品と同じ見た目にしない。ready 昇格は人間が GitHub UI で判断する）。WARN 止まりや PASS は従来どおり ready
+5. **5回FAILのまま打ち切った場合は、Phase 8 で PR を作った直後に `do-not-merge` ラベルを付け、未解消指摘を PR にコメントする**（レビュー不合格のまま出す成果物を合格品と同じ扱いにしない）。手順は Phase 8 の「レビュー未解消のまま出す場合」を参照。WARN 止まりや PASS では何もしない
+
+   > **draft PR にはしない**（2026-07-19 変更）。draft は CI 側のレビュー（`claude-review` 等は `draft == false` を条件にしていることが多い）を素通りさせるので、**一番怪しい PR が無検査のまま人手に渡る**。ready で出してレビューは受けさせ、merge だけをラベルで止める。
 
 > 上限が [`fix-pr`](../fix-pr/SKILL.md) の 3 回より多いのは、新規実装はゼロから設計するため指摘が複数観点に及びやすいから（fix-pr は変更スコープが限定的で 3 回で収束しやすい）。
 
@@ -288,7 +290,6 @@ Skill tool:
     変更ファイル: <変更ファイルリスト>
     コミットメッセージ: <変更内容に基づくメッセージ>
     PRタイトル: <要件を簡潔に表すタイトル>
-    draft: <Phase 7 の判定（上記サイクル 5）に従う。該当時のみ「true（レビュー予算切れFAIL: <要点1行>）」を渡し、非該当ならこの行自体を省略>
     PR説明に含める情報:
       - 要件サマリー
       - 変更ファイルと概要
@@ -298,6 +299,30 @@ Skill tool:
 ```
 
 `create-pr` 側でブランチ作成・コミット・push・PR作成を一括実施するため、本スキルから個別に `gh pr create` 等を叩かないこと。
+
+### レビュー未解消のまま出す場合（Phase 7 が 5回FAIL のときだけ）
+
+PR 作成後に、merge を止める signal を 2 つ残す。**PASS / WARN 打ち切りでは何もしない。**
+
+```bash
+# 1. ラベル（常設ループの自動 merge を止める）
+gh label list --limit 100 --repo <owner/repo> | grep -q '^do-not-merge' \
+  && gh pr edit <PR URL> --add-label do-not-merge
+
+# 2. 何が未解消かを人間が読める形で
+gh pr comment <PR URL> --body "$(cat <<'EOF'
+⚠️ ローカルレビュー（doc-impl-reviewer）5回FAILのまま PR 作成（implement-issue）。
+
+### 未解消の指摘
+- <要点1>
+- <要点2>
+
+内容を確認し、解消できたら `do-not-merge` ラベルを外してください。
+EOF
+)"
+```
+
+**repo に `do-not-merge` ラベルが無ければラベル付与は skip し、コメントだけ残す**（存在しないラベルを `--add-label` に渡すと `gh` が失敗するため。ラベルの新規作成もしない — 常設ループを運用していない repo では意味を持たない）。
 
 ### IssueへのPRコメント投稿
 

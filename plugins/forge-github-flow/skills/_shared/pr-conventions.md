@@ -19,6 +19,7 @@
 
 - **main / master / default branch へ直接 push しない。例外なし**（`git-push-guard.py` hook が harness 層でも deny する）。フィーチャーブランチを必ず作成・使用する。
 - **`gh pr merge` を実行しない。** merge は人間が GitHub UI で内容を見て手動で行う。PR の ready / draft 状態も変えない。このルールは**セッション中の skill に対するもの**で、常設ループによる自動 merge（claude-forge-personal の `tools/loops/pr_watch.py` が安全ガードを通った PR だけを merge する）とは別扱い。skill から merge しないのは、対話の流れで merge されると人間が内容を見る機会がそのまま消えるため — ループ側は repo allowlist・ラベル・パス・CI 完了を条件にして、止める場所を 1 箇所に集めている。
+- **`do-not-merge` ラベルが「自動 merge を止めてほしい」の唯一の signal。** ローカルレビューが未解消のまま PR を出す場合（implement-issue の 5回FAIL / fix-pr の 3回FAIL）は、このラベルを付けたうえで未解消点をコメントに残す。**コメントだけでは止まらない** — ループはコメントを読まない。人間がラベルを外せば merge される。**draft PR は signal に使わない**（2026-07-19 変更）: CI 側のレビューは `draft == false` を条件にしていることが多く、draft にすると一番怪しい PR が無検査のまま人手に渡る。repo にこのラベルが無ければ付与は skip し、コメントだけ残す（新規作成はしない）。
 - **force push しない。** `--force` / `--force-with-lease` はユーザーの明示確認がある時だけ。
 - **`git add -A` / `git add .` を使わない。** 変更ファイルを明示パス指定で stage する。
 - **Co-Authored-By を付与しない。**
