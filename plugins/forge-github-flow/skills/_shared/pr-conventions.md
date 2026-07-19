@@ -95,11 +95,16 @@ LLM は「念のため」セクションを足しがちで、§1 を見ても混
 **`timeout` / `gtimeout` を使わない。** macOS には標準で入っておらず（coreutils 未導入なら `command not found` = exit 127）、`timeout 900 gh pr checks --watch` は **CI を待たずに即座に抜ける** — 待っているつもりで結果を見ないまま次へ進むので、失敗が素通りする。待ち時間は下の `for` ループで自分で数える。
 
 1. **起動待ち** — push 直後は run が未登録のことがある。`gh pr checks <PR URL>` を **15 秒間隔で最大 ~90 秒**見て、check が 1 つでも現れたら「CI あり」。~90 秒経っても現れなければ「CI なし」と確定して各 skill の次ステップ（完了報告）へ進む。**15 秒 1 回の `no checks reported` を確定にしない** — 後から起動する CI を取りこぼし、§3 の自動修正ループごと空振りする。
-2. **完了待ち** — `bucket` が `pending` の check が無くなるまで待つ。下のブロック 1 回で ~3.5 分なので、`DONE` も `GH_ERROR` も出なければ**同じブロックを呼び直す（最大 4 回 = ~14 分）**。4 回で終わらなければ**タイムアウト**として扱い、サイクルを消化せず完了報告に「CI 未完了」を明記して引き継ぐ（PR は維持する）。Bash ツールは 1 回の呼び出しに実行時間上限があるので、**15 分待ちを 1 ブロックに書かない**。
-3. **判定** — 下の判定ブロックの `now` で分岐する。`GH_ERROR` = **CI 状態を取得できていない**（認証切れ・rate limit・URL 誤り等で `gh` が非ゼロ終了）。このとき**空文字列を「全 PASS」に倒してはいけない** — 一度も CI を見ていないのに成功扱いになり、失敗が素通りする。空 = 全 PASS として次ステップへ。非空 = FAIL あり → §3 の分類で自動修正 → 再 push → 1 に戻る（**最大 3 サイクル**）。
+2. **完了待ち** — 下のブロック 1 回で ~3.5 分なので、`DONE` も `GH_ERROR` も出なければ**同じブロックを呼び直す（最大 4 回 = ~14 分）**。4 回で終わらなければ**タイムアウト**として扱い、サイクルを消化せず完了報告に「CI 未完了」を明記して引き継ぐ（PR は維持する）。Bash ツールは 1 回の呼び出しに実行時間上限があるので、**15 分待ちを 1 ブロックに書かない**。
+3. **判定** — 下の判定ブロックの `now` で分岐する。`GH_ERROR` = **CI 状態を取得できていない**。このとき**空文字列を「全 PASS」に倒してはいけない** — 一度も CI を見ていないのに成功扱いになり、失敗が素通りする。空 = 全 PASS として次ステップへ。非空 = FAIL あり → §3 の分類で自動修正 → 再 push → 1 に戻る（**最大 3 サイクル**）。
 4. **無進捗なら残りサイクルを捨てる** — 失敗 check 名の集合を**ファイルに残して**次サイクルで比較する（長時間ループでは文脈が圧縮されうるので、記憶に頼らない）。`prev` と `now` が非空で完全一致したら、サイクルが残っていても打ち切る。同じ失敗を 3 周するのは「あと 1 周で直る」ではなく「直せていない」。上限（3 サイクル）は予算の天井であって、進んでいることの保証ではない。
 
+**`gh pr checks` の終了コードを「取得の成否」と読み違えない。** `gh pr checks --help` が明記するとおり **`8` は "Checks pending"**（正常な待機中）で、FAIL があるときも非ゼロで終わる。だから `gh … || エラー扱い` と書くと、**CI が走り始めた瞬間に打ち切られて完了待ちが機能しない**。取得できたかどうかは **JSON が返ったか**で判定し、まだ待つかどうかは **exit 8** で判定する。
+
 ```bash
+# 0. サイクルに入る前に 1 回だけ: state を初期化（前回実行の残骸を PREV として読まないため）
+STATE="/tmp/ci_fails_$(printf '%s' "<owner/repo>" | tr / _)_<PR番号>.txt"; : > "$STATE"
+
 # 1. 起動待ち: check が現れるまで最大 ~90 秒。現れなければ「CI なし」で次ステップへ
 for _ in $(seq 1 6); do
   gh pr checks <PR URL> 2>/dev/null | grep -q . && break
@@ -108,16 +113,22 @@ done
 
 # 2. 完了待ち: 1 ブロック ≈ 3.5 分。DONE / GH_ERROR が出なければこのブロックを呼び直す（最大 4 回）
 for _ in $(seq 1 7); do
-  PENDING=$(gh pr checks <PR URL> --json bucket --jq '[.[]|select(.bucket=="pending")]|length') \
-    || { echo "GH_ERROR"; break; }
-  [ "$PENDING" = "0" ] && { echo "DONE"; break; }
+  OUT=$(gh pr checks <PR URL> --json name,bucket 2>/dev/null); RC=$?
+  case "$OUT" in
+    '['*) ;;                                   # JSON が返った = 状態は取れている
+    *)    echo "GH_ERROR"; break ;;            # 返っていない = 認証切れ・通信不能・URL 誤り
+  esac
+  [ "$RC" = "8" ] || { echo "DONE"; break; }   # 8 = pending 残り。0（全 pass）/ 他（fail あり）は確定
   sleep 30
 done
 
-# 3-4. 判定と無進捗検知: 前サイクルの結果はファイルに残す
-PREV=$(cat /tmp/ci_fails_<PR番号>.txt 2>/dev/null)
-NOW=$(gh pr checks <PR URL> --json name,bucket --jq '[.[]|select(.bucket=="fail")|.name]|sort|join(",")') || NOW="GH_ERROR"
-[ "$NOW" != "GH_ERROR" ] && echo "$NOW" > /tmp/ci_fails_<PR番号>.txt
+# 3-4. 判定と無進捗検知
+PREV=$(cat "$STATE" 2>/dev/null)
+OUT=$(gh pr checks <PR URL> --json name,bucket 2>/dev/null)
+case "$OUT" in
+  '['*) NOW=$(printf '%s' "$OUT" | jq -r '[.[]|select(.bucket=="fail")|.name]|sort|join(",")'); echo "$NOW" > "$STATE" ;;
+  *)    NOW="GH_ERROR" ;;
+esac
 echo "prev=[$PREV] now=[$NOW]"
 ```
 
@@ -127,6 +138,8 @@ echo "prev=[$PREV] now=[$NOW]"
 | 空 | 全 PASS | 次ステップへ |
 | 非空 かつ `prev` と一致 | 無進捗 | サイクルが残っていても打ち切り、「無進捗のため打ち切り」を明記して引き継ぐ |
 | 非空 かつ `prev` と不一致 | 直っている途中 | §3 の分類で自動修正 → 再 push → 1 に戻る |
+
+> **既知の限界**: 無進捗判定は check 名の集合だけを見るので、「同じ `lint` が別の原因で落ち続ける」ケースを無進捗と誤判定しうる。誤判定しても失うのは残りサイクルだけ（人間に引き継がれる）なので安全側に倒している。
 
 > `bucket` は `pass` / `fail` / `pending` / `skipping` / `cancel` に正規化された値で、`state`（`SUCCESS` / `FAILURE` / …）より分岐が安定する。
 
