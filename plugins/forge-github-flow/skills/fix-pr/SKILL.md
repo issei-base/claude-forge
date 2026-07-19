@@ -181,18 +181,26 @@ Agent tool:
 - FAIL → 指摘を修正して再レビュー（前回指摘を次の prompt に渡す）
 - PASS → Phase 7 へ進む
 - 最大3回で打ち切り（WARN や 3回FAIL でもそのまま Phase 7 へ。レビュー状況は完了報告でユーザに伝える）
-- **3回FAILのまま打ち切った場合は、Phase 7 の push 完了後に PR へ警告コメントを 1 件だけ投稿する**。既存 PR の ready/draft 状態は変えない（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0）ため、merge 判断者への signal はこのコメントで出す。PASS / WARN 打ち切りでは投稿しない
+- **3回FAILのまま打ち切った場合は、Phase 7 の push 完了後に `do-not-merge` ラベルと警告コメントを残す**。既存 PR の ready/draft 状態は変えない（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0）ので、signal はこの 2 つで出す。PASS / WARN 打ち切りでは何もしない
 
   ```bash
+  # 常設ループの自動 merge を止める（コメントだけでは止まらない）
+  gh label list --limit 100 --repo <owner/repo> | grep -q '^do-not-merge' \
+    && gh pr edit <PR URL> --add-label do-not-merge
+
   gh pr comment <PR URL> --body "$(cat <<'EOF'
   ⚠️ ローカルレビュー（doc-impl-reviewer）3回FAILのまま push（fix-pr）。
 
   ### 未解消の指摘
   - <要点1>
   - <要点2>
+
+  内容を確認し、解消できたら `do-not-merge` ラベルを外してください。
   EOF
   )"
   ```
+
+  **repo に `do-not-merge` ラベルが無ければラベル付与は skip し、コメントだけ残す**（存在しないラベルを渡すと `gh` が失敗する。ラベルの新規作成もしない）。ラベルを足したのは 2026-07-19 — 常設ループが CI 緑の PR を自動 merge するようになり、**コメントだけでは merge を止められなくなった**ため。
 
 PR修正は新規実装より変更スコープが小さいため、サイクル上限は implement-issue（5回）より少なく設定している。
 

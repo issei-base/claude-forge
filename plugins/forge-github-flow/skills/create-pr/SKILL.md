@@ -170,7 +170,9 @@ non-fast-forward で reject された場合は **STOP**。`--force` / `--force-w
 
 ### 5-5: PR作成実行
 
-PR は **ready（非 draft）** で作成する。**merge は人間が手動**で行う（claude-forge 方針＝レビュー結果を読んで人間が merge）。**例外は 1 つだけ**: 呼び出し元（implement-issue 等）が args で `draft: true（レビュー予算切れFAIL: ...）` を明示して委譲してきた場合は `--draft` を付けて作成する — レビュー不合格のまま出す成果物を合格品と区別するため。ready 昇格はこの skill からは行わず、人間が GitHub UI で判断する（作成時点の初期状態の選択であり、作成後に ready/draft を変えない [`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0 とは矛盾しない）。draft で作成したときは完了報告に「draft である旨と理由（未解消指摘の要点）」を明記する。
+PR は **常に ready（非 draft）** で作成する。merge は人間か、常設ループの安全ガードが判断する（[`_shared/pr-conventions.md`](../_shared/pr-conventions.md) §0）。
+
+**この skill は draft PR を作らない**（2026-07-19 変更）。以前はレビュー予算切れの委譲を受けて `--draft` を付けていたが、draft だと CI 側のレビュー（`claude-review` 等は `draft == false` を条件にしていることが多い）が走らず、一番怪しい PR が無検査のまま人手に渡る。レビュー未解消の signal は呼び出し元が **PR 作成後に `do-not-merge` ラベル＋コメント**で残す（implement-issue Phase 8 / fix-pr Phase 6）。
 
 ```bash
 gh pr create \
@@ -188,7 +190,7 @@ EOF
 - `--assignee @me` で PR の所有者を自分にする（UI で明確になる）。
 - Issue URL が渡されている場合は、Related セクションに Issue URL を記載する。
 - このブランチに既に PR がある（`gh pr view` で取得できる）なら **重複作成しない**。URL を見せて title/body を更新するか判断する。
-- 呼び出し元から `draft: true（レビュー予算切れFAIL: ...）` を渡された場合のみ `--draft` を追加する。それ以外で `--draft` は使わない。
+- **`--draft` は使わない。** レビュー未解消の PR も ready で出し、merge だけをラベルで止める（上記参照）。
 
 ## Step 6: CI検証＋自動修正ループ
 
