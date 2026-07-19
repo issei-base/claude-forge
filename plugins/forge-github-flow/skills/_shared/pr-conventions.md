@@ -18,7 +18,7 @@
 §3〜§5 と同じく、ここを唯一の定義とし各 SKILL.md は参照 + fallback 要点だけ残す。
 
 - **main / master / default branch へ直接 push しない。例外なし**（`git-push-guard.py` hook が harness 層でも deny する）。フィーチャーブランチを必ず作成・使用する。
-- **`gh pr merge` を実行しない。** merge は人間が GitHub UI で内容を見て手動で行う。PR の ready / draft 状態も変えない。
+- **`gh pr merge` を実行しない。** merge は人間が GitHub UI で内容を見て手動で行う。PR の ready / draft 状態も変えない。このルールは**セッション中の skill に対するもの**で、常設ループによる自動 merge（claude-forge-personal の `tools/loops/pr_watch.py` が安全ガードを通った PR だけを merge する）とは別扱い。skill から merge しないのは、対話の流れで merge されると人間が内容を見る機会がそのまま消えるため — ループ側は repo allowlist・ラベル・パス・CI 完了を条件にして、止める場所を 1 箇所に集めている。
 - **force push しない。** `--force` / `--force-with-lease` はユーザーの明示確認がある時だけ。
 - **`git add -A` / `git add .` を使わない。** 変更ファイルを明示パス指定で stage する。
 - **Co-Authored-By を付与しない。**
