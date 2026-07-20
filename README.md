@@ -227,7 +227,7 @@ flowchart TB
     DRV -. 事実照合(claim単位) .-> FCK
 ```
 
-> 個人系 skill (link-triage / cc-tune / playbook-sync / explain-article / doc-illustrate / make-slides / make-kadai / gemini-multimodal / interest-profile / storage-cleanup) は private repo へ分離済み。`skill-empirical-tester` は ship §3.6（新規 skill / 実質変更のとき）、`fact-checker` は doc-review の fact 観点から委譲される。加えて skill 開発・教材検証時には明示委譲でも使う。
+> 個人系 skill (link-triage / cc-tune / playbook-sync / explain-article / doc-illustrate / make-slides / make-kadai / interest-profile / storage-cleanup) は private repo へ分離済み。`skill-empirical-tester` は ship §3.6（新規 skill / 実質変更のとき）、`fact-checker` は doc-review の fact 観点から委譲される。加えて skill 開発・教材検証時には明示委譲でも使う。
 
 ## 発火のしくみ（何がキッカケで動くか）
 
